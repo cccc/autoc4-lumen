@@ -1,0 +1,25 @@
+{
+    "$schema": "https://biomejs.dev/schemas/2.4.9/schema.json",
+    "formatter": {
+        "enabled": true,
+        "useEditorconfig": true,
+        "includes": ["./src/**"]
+    },
+    "linter": {
+        "enabled": false
+    },
+    "assist": {
+        "actions": {
+            "source": {
+                "organizeImports": {
+                    "level": "on"
+                }
+            }
+        }
+    },
+    "css": {
+        "parser": {
+            "tailwindDirectives": true
+        }
+    }
+}
