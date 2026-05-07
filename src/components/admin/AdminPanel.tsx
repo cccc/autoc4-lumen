@@ -1,13 +1,13 @@
+import { Power, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Power, Send } from "lucide-react";
+import BusleisteControl from "@/components/busleiste/BusleisteControl";
+import MQTTSwitch from "@/components/lights/MQTTSwitch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import BusleisteControl from "@/components/busleiste/BusleisteControl";
-import MQTTSwitch from "@/components/lights/MQTTSwitch";
 import { useDebugStore } from "@/lib/debug";
-import { confirm, showDialog, closeDialog } from "@/lib/dialog";
+import { closeDialog, confirm, showDialog } from "@/lib/dialog";
 import { useMQTTSend, useMQTTString } from "@/lib/mqtt";
 import { cn } from "@/lib/utils";
 
@@ -213,7 +213,7 @@ export default function AdminPanel() {
     }
 
     function handleClearMessage() {
-        sendData("club/status/message", "", true);
+        sendByte("club/status/message", 0, { retained: true });
         toast.success("Status message cleared.");
     }
 
@@ -259,11 +259,12 @@ export default function AdminPanel() {
                                               ? "The club is currently closed."
                                               : "Status unknown. Not connected?"}
                                     </p>
-                                    {statusMessage && (
-                                        <p className="text-sm italic">
-                                            {statusMessage}
-                                        </p>
-                                    )}
+                                    {statusMessage &&
+                                        statusMessage !== "\0" && (
+                                            <p className="text-sm italic">
+                                                {statusMessage}
+                                            </p>
+                                        )}
                                 </div>
                                 <button
                                     type="button"
