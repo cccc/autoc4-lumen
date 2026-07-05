@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { HSV, RGB } from "@/lib/color";
 import { hsvToRgb, rgbToHex, rgbToHsv } from "@/lib/color";
@@ -431,7 +431,17 @@ export default function ColorPicker({
 
     const handleHsvChange = useCallback(
         (partial: Partial<HSV>) => {
-            onChange(hsvToRgb({ ...hsv, ...partial }));
+            const next = { ...hsv, ...partial };
+            // Black (lamp off) round-trips to v=0 with meaningless h/s,
+            // so picking only a hue/saturation would stay black. Default
+            // the components the gesture doesn't set, so picking a color
+            // turns the lamp on.
+            if (hsv.v === 0) {
+                if (partial.v === undefined) next.v = 1;
+                if (partial.s === undefined && partial.h !== undefined)
+                    next.s = 1;
+            }
+            onChange(hsvToRgb(next));
         },
         [hsv, onChange],
     );
