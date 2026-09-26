@@ -4,7 +4,8 @@ Web interface for controlling the Chaos Computer Club Cologne's infrastructure: 
 
 ## Tech Stack
 
-- React 19, TypeScript, Vite
+- React 19, TypeScript
+- Vite+ (Vite, Oxlint, Oxfmt)
 - Tailwind CSS v4, shadcn/ui
 - mqtt.js (MQTT over WebSocket)
 - Zustand (MQTT state store)
@@ -14,27 +15,22 @@ Web interface for controlling the Chaos Computer Club Cologne's infrastructure: 
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm
+- [Vite+](https://viteplus.dev) (`vp`). It downloads the Node.js and pnpm versions pinned in `package.json` automatically.
+- Docker (optional, for the local MQTT broker)
 
 ### Setup
 
 ```sh
-pnpm install
+vp install
 cp .env.example .env
 ```
+
+`vp install` also sets up the pre-commit hook, which runs `vp check --fix` on staged files.
 
 Edit `.env` to point at your MQTT broker:
 
 ```
-VITE_MQTT_SERVER=localhost
-VITE_MQTT_PORT=9001
-```
-
-### Development
-
-```sh
-pnpm dev
+VITE_MQTT_SERVER_URL=ws://localhost:9001
 ```
 
 ### Local MQTT Broker
@@ -46,29 +42,44 @@ docker compose up -d
 ```
 
 This starts Mosquitto with:
+
 - MQTT on port `1883`
 - WebSockets on port `9001` (what the UI connects to)
 - Anonymous access enabled
 
+The defaults in `.env.example` already point at this broker.
+
+### Development
+
+```sh
+vp dev
+```
+
+### Checks
+
+```sh
+vp check        # format, lint and typecheck
+vp check --fix  # apply fixes
+```
+
 ### Build
 
 ```sh
-pnpm build
+vp build
 ```
 
 Output goes to `dist/`. Serve it with any static file server.
 
 ### Production
 
-The `.env.production` file is loaded automatically during `pnpm build`. It points at the production MQTT broker. Override by setting environment variables before building.
+The `.env.production` file is loaded automatically during `vp build`. It points at the production MQTT broker. Override by setting environment variables before building.
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `VITE_MQTT_SERVER` | `localhost` | MQTT broker hostname |
-| `VITE_MQTT_PORT` | `9001` | MQTT WebSocket port |
-| `VITE_MQTT_CLIENT_PREFIX` | `lumen_` | Client ID prefix for MQTT connections |
+| Variable                  | Default  | Description                                                                              |
+| ------------------------- | -------- | ---------------------------------------------------------------------------------------- |
+| `VITE_MQTT_SERVER_URL`    | required | MQTT WebSocket URL. May be relative to the page; `http(s)://` is rewritten to `ws(s)://` |
+| `VITE_MQTT_CLIENT_PREFIX` | `lumen_` | Client ID prefix for MQTT connections                                                    |
 
 ## Project Structure
 
