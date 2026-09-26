@@ -6,7 +6,10 @@ export default defineConfig({
     staged: {
         "*": "vp check --fix",
     },
-    fmt: {},
+    fmt: {
+        printWidth: 80,
+        ignorePatterns: ["dist"],
+    },
     lint: {
         plugins: ["oxc", "typescript", "unicorn", "react"],
         categories: {

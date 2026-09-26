@@ -7,8 +7,8 @@
         "dev": "vp dev",
         "build": "tsc -b && vp build",
         "lint": "vp lint .",
-        "format": "biome format --write .",
-        "check": "biome check --write .",
+        "format": "vp fmt",
+        "check": "vp check --fix",
         "preview": "vp preview",
         "prepare": "vp config"
     },
@@ -30,7 +30,6 @@
         "zustand": "^5.0.13"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.4.14",
         "@tailwindcss/vite": "^4.2.4",
         "@types/node": "^25.3.0",
         "@types/react": "^19.2.14",
