@@ -1,6 +1,6 @@
-import { useMQTTByte, useMQTTSend } from "@/lib/mqtt";
 import { cn } from "@/lib/utils";
 import { Lightbulb, Snowflake, Sun } from "lucide-react";
+import MQTTSwitch from "./MQTTSwitch";
 
 interface HalfProps {
     topic: string;
@@ -20,38 +20,35 @@ function Half({
     tint,
     side,
 }: HalfProps & { side: "left" | "right" }) {
-    const byte = useMQTTByte(topic);
-    const { sendByte } = useMQTTSend();
-    const isOn = byte !== undefined && byte !== 0;
-    const isUnknown = byte === undefined;
-
     const Icon =
         tint === "cold" ? Snowflake : tint === "warm" ? Sun : Lightbulb;
 
     return (
-        <button
-            type="button"
-            className={cn(
-                "flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium text-white transition-colors active:scale-95",
-                side === "left" && "rounded-l-lg",
-                side === "right" && "rounded-r-lg",
-                isUnknown && "bg-muted text-muted-foreground",
-                !isUnknown &&
-                    isOn &&
-                    tint === "cold" &&
-                    "bg-tint-cold hover:bg-tint-cold-hover",
-                !isUnknown &&
-                    isOn &&
-                    tint === "warm" &&
-                    "bg-tint-warm hover:bg-tint-warm-hover",
-                !isUnknown && isOn && !tint && "bg-on hover:bg-on-hover",
-                !isUnknown && !isOn && "bg-off hover:bg-off-hover",
+        <MQTTSwitch topic={topic}>
+            {(state, toggle) => (
+                <button
+                    type="button"
+                    className={cn(
+                        "flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium text-white transition-colors active:scale-95",
+                        side === "left" && "rounded-l-lg",
+                        side === "right" && "rounded-r-lg",
+                        state === "unknown" && "bg-muted text-muted-foreground",
+                        state === "on" &&
+                            tint === "cold" &&
+                            "bg-tint-cold hover:bg-tint-cold-hover",
+                        state === "on" &&
+                            tint === "warm" &&
+                            "bg-tint-warm hover:bg-tint-warm-hover",
+                        state === "on" && !tint && "bg-on hover:bg-on-hover",
+                        state === "off" && "bg-off hover:bg-off-hover",
+                    )}
+                    onClick={toggle}
+                >
+                    <Icon className="size-9" strokeWidth={1.25} />
+                    <span>{label}</span>
+                </button>
             )}
-            onClick={() => sendByte(topic, isOn ? 0 : 1, { retained: true })}
-        >
-            <Icon className="size-9" strokeWidth={1.25} />
-            <span>{label}</span>
-        </button>
+        </MQTTSwitch>
     );
 }
 
