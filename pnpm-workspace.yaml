@@ -3,7 +3,7 @@ allowBuilds:
 
 catalog:
     vite: npm:@voidzero-dev/vite-plus-core@0.2.9
-    vite-plus: 0.2.9
+    vite-plus: 1.0.0-rc.0
 
 overrides:
     vite: "catalog:"
