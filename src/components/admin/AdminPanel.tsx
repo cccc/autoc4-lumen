@@ -231,7 +231,7 @@ export default function AdminPanel() {
                     <Power className="size-4" /> Force Shutdown
                 </span>
             ),
-            onConfirm: () => sendByte("club/shutdown", 1),
+            onConfirm: () => sendByte("club/shutdown", 0x44),
         });
     }
 
