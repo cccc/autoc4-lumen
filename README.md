@@ -64,8 +64,10 @@ vp check --fix  # apply fixes
 
 ### Build
 
+Use `vpr build` instead of `vp build` otherwise typechecking will not run. This will not just ignore type warnings but also errors because typescript is never run. `vp build` will only do typestripping and will not check anything for validity.
+
 ```sh
-vp build
+vpr build
 ```
 
 Output goes to `dist/`. Serve it with any static file server.
