@@ -23,6 +23,7 @@ export default function DimmerButton({
         // undefined until the topic (or this byte of it) has been received
         remote: useMQTTByte(topic, { offset }),
         send: (value) => sendByte(topic, value, { offset, retained: true }),
+        interval: 25,
     });
 
     const isUnknown = brightness === undefined;
@@ -57,6 +58,7 @@ export default function DimmerButton({
                     onValueCommitted={(value) => commit(value)}
                     min={0}
                     max={255}
+                    disabled={isUnknown}
                 >
                     <Slider.Control className="relative flex w-full cursor-pointer touch-none items-center select-none">
                         <Slider.Track className="relative h-8 w-full overflow-hidden rounded-lg bg-muted">
