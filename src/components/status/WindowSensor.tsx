@@ -17,7 +17,7 @@ export default function WindowSensor({ topic, label }: WindowSensorProps) {
     return (
         <div
             className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg min-w-32",
+                "@container flex items-center gap-3 px-4 py-3 rounded-lg min-w-32",
                 isUnknown && "bg-muted text-muted-foreground",
                 !isUnknown &&
                     isOpen &&
@@ -29,6 +29,9 @@ export default function WindowSensor({ topic, label }: WindowSensorProps) {
         >
             <Icon className="size-6 shrink-0" />
             <span className="font-medium">{label}</span>
+            <span className="ml-auto text-sm font-light hidden @[22rem]:inline">
+                {isUnknown ? "Unbekannt" : isOpen ? "Offen" : "Geschlossen"}
+            </span>
         </div>
     );
 }
