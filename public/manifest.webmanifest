@@ -1,0 +1,37 @@
+{
+    "id": "./",
+    "name": "AutoC4 Lumen",
+    "short_name": "Lumen",
+    "description": "Control lights and devices at the CCC Cologne via MQTT.",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#0a0a0a",
+    "theme_color": "#0a0a0a",
+    "shortcuts": [
+        { "name": "Wohnzimmer", "url": "./#/room/wohnzimmer" },
+        { "name": "Plenarsaal", "url": "./#/room/plenar" },
+        { "name": "Fnordcenter", "url": "./#/room/fnord" },
+        { "name": "Keller", "url": "./#/room/keller" }
+    ],
+    "icons": [
+        {
+            "src": "icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}
