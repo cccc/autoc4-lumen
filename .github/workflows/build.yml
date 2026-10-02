@@ -1,0 +1,71 @@
+# Targets GitHub Actions. To run on Forgejo instead, move this file to
+# .forgejo/workflows/ and apply the changes marked "Forgejo:" below.
+
+name: Build
+
+on:
+    push:
+        branches: [master]
+        tags: ["v*"]
+    pull_request:
+    workflow_dispatch:
+
+defaults:
+    run:
+        shell: bash
+
+jobs:
+    build:
+        # Forgejo: the label depends on the runner; the default is "docker",
+        # e.g.
+        #   runs-on: docker
+        #   container:
+        #       image: node:24-bookworm
+        runs-on: ubuntu-latest
+        # Needed to create releases; ignored by Forgejo
+        permissions:
+            contents: write
+        steps:
+            - uses: actions/checkout@v7
+
+            # Installs vp (version from the pnpm catalog), node and pnpm (from
+            # devEngines in package.json), then runs `vp install`.
+            # Forgejo: not on the Forgejo action mirror, use the full URL
+            # https://github.com/voidzero-dev/setup-vp@v1.21.1
+            - uses: voidzero-dev/setup-vp@v1.21.1
+              with:
+                  node-version-file: package.json
+                  cache: true
+
+            - run: vp check
+
+            - run: vp run build
+
+            - name: Package
+              run: |
+                  if [ "$GITHUB_REF_TYPE" = tag ]; then
+                      version="$GITHUB_REF_NAME"
+                  else
+                      version="${GITHUB_SHA::7}"
+                  fi
+                  mkdir -p release
+                  echo "$version" > dist/VERSION
+                  tar -czf release/autoc4-lumen.tar.gz -C dist .
+
+            # Forgejo: upstream upload-artifact v4+ refuses to run outside
+            # github.com, use https://code.forgejo.org/forgejo/upload-artifact@v5
+            - uses: actions/upload-artifact@v7
+              with:
+                  name: autoc4-lumen
+                  path: release/*.tar.gz
+
+            # Forgejo: replace with
+            #   uses: actions/forgejo-release@v2
+            #   with:
+            #       direction: upload
+            #       release-dir: release
+            - name: Publish release
+              if: github.ref_type == 'tag'
+              uses: softprops/action-gh-release@v3
+              with:
+                  files: release/*.tar.gz
