@@ -14,6 +14,13 @@ declare module "mqtt" {
     }
 }
 
+declare global {
+    interface Window {
+        /** Devtools handle, e.g. `lumen.client.subscribe("some/topic")`. */
+        lumen?: { client: mqtt.MqttClient };
+    }
+}
+
 let client: mqtt.MqttClient | null = null;
 
 // `fatal: true` makes decode() throw on invalid UTF-8 instead of substituting
@@ -48,6 +55,7 @@ export function connectMQTT(): mqtt.MqttClient {
         clientId: generateId(),
         protocolVersion: 4,
     });
+    window.lumen = { ...window.lumen, client };
 
     client.on("connect", () => {
         if (getDebugFlags().connection) console.debug("MQTT connected");
