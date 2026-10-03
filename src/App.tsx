@@ -21,6 +21,7 @@ import { rooms } from "@/lib/appliances";
 import { CyberProvider } from "@/lib/cyber-context";
 import { DialogProvider } from "@/lib/dialog";
 import { connectMQTT } from "@/lib/mqtt";
+import { usePWAStore } from "@/lib/pwa";
 import { ThemeProvider } from "@/lib/theme-context";
 import { useViewMode } from "@/lib/view-mode";
 
@@ -198,9 +199,15 @@ export default function App() {
     useEffect(() => {
         connectMQTT();
     }, []);
+    const installable = usePWAStore((s) => s.installable);
 
     return (
         <ThemeProvider>
+            {/* Opt-in: some browsers (Firefox Android) only offer PWA install
+                once a manifest exists, hiding the plain home screen shortcut. */}
+            {installable && (
+                <link rel="manifest" href="./manifest.webmanifest" />
+            )}
             <AdminProvider>
                 <CyberProvider>
                     <RouterProvider router={router} />
