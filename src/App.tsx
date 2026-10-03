@@ -15,6 +15,7 @@ import AdminTab from "@/app/tabs/AdminTab";
 import LightTab from "@/app/tabs/LightTab";
 import PresetsTab from "@/app/tabs/PresetsTab";
 import RoomView from "@/app/tabs/RoomView";
+import SettingsTab from "@/app/tabs/SettingsTab";
 import StatusTab from "@/app/tabs/StatusTab";
 import { AdminProvider } from "@/lib/admin-context";
 import { rooms } from "@/lib/appliances";
@@ -91,6 +92,7 @@ function useViewModeSync() {
             !pathname.startsWith("/room/") &&
             pathname !== "/status" &&
             pathname !== "/admin" &&
+            pathname !== "/settings" &&
             mode !== "function"
         ) {
             setMode("function");
@@ -185,6 +187,11 @@ const router = createHashRouter([
                 path: "/admin",
                 element: <AdminTab />,
                 handle: { title: "Admin", navIndex: 1001 },
+            },
+            {
+                path: "/settings",
+                element: <SettingsTab />,
+                handle: { title: "Settings", navIndex: 1002 },
             },
             {
                 path: "/room/:roomId",
