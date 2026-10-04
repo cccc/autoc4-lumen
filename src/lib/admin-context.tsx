@@ -74,3 +74,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 export function useAdmin() {
     return useContext(AdminContext);
 }
+
+export function AdminOnly({ children }: { children: ReactNode }) {
+    const { enabled } = useAdmin();
+    if (!enabled) return null;
+    return <>{children}</>;
+}

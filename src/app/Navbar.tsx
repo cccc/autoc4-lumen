@@ -25,7 +25,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
-import { useAdmin } from "@/lib/admin-context";
+import { AdminOnly, useAdmin } from "@/lib/admin-context";
 import { useCyber } from "@/lib/cyber-context";
 import { confirm } from "@/lib/dialog";
 import {
@@ -441,7 +441,6 @@ function NavLink_({
 }
 
 function NavLinks({ onClick }: { onClick?: () => void }) {
-    const { enabled: adminEnabled } = useAdmin();
     const { mode } = useViewMode();
 
     const items =
@@ -460,9 +459,9 @@ function NavLinks({ onClick }: { onClick?: () => void }) {
             {items.map(({ to, label }) => (
                 <NavLink_ key={to} to={to} label={label} onClick={onClick} />
             ))}
-            {adminEnabled && (
+            <AdminOnly>
                 <NavLink_ to="/admin" label="Admin" onClick={onClick} />
-            )}
+            </AdminOnly>
         </>
     );
 }
