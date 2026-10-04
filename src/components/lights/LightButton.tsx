@@ -1,6 +1,5 @@
-import { cn } from "@/lib/utils";
 import { Lightbulb, LightbulbOff, Power } from "lucide-react";
-import BigButton from "./BigButton";
+import BigButton from "../ui/big-button";
 import MQTTSwitch from "./MQTTSwitch";
 
 interface LightButtonProps {
@@ -25,19 +24,11 @@ export default function LightButton({
                           : LightbulbOff;
 
                 return (
-                    <BigButton
-                        onClick={toggle}
-                        className={cn(
-                            state === "unknown" &&
-                                "bg-muted text-muted-foreground",
-                            state === "on" && "bg-on hover:bg-on-hover",
-                            state === "off" && "bg-off hover:bg-off-hover",
-                        )}
-                    >
-                        <Icon className="size-12" strokeWidth={1.25} />
-                        <span className="text-xs leading-tight text-center px-1">
-                            {children}
-                        </span>
+                    <BigButton onClick={toggle} color={state}>
+                        <BigButton.Icon>
+                            <Icon />
+                        </BigButton.Icon>
+                        <BigButton.Label>{children}</BigButton.Label>
                     </BigButton>
                 );
             }}
