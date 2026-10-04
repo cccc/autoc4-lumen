@@ -9,6 +9,7 @@ import DimmerButton from "./DimmerButton";
 import LightButton from "./LightButton";
 import PairedLightButton from "./PairedLightButton";
 import TasmotaButton from "./TasmotaButton";
+import WLEDButton from "../wled/WLEDButton";
 
 function ApplianceComponent({ appliance }: { appliance: Appliance }) {
     switch (appliance.type) {
@@ -81,6 +82,14 @@ function ApplianceComponent({ appliance }: { appliance: Appliance }) {
                 <div style={{ gridColumn: "1 / -1" }}>
                     <MusicControls room={appliance.room} />
                 </div>
+            );
+        case "wled":
+            return (
+                <WLEDButton
+                    label={appliance.label}
+                    topic={appliance.topic}
+                    url={appliance.url}
+                />
             );
     }
 }

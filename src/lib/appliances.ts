@@ -60,6 +60,15 @@ interface MusicAppliance {
     tags: string[];
 }
 
+interface WLEDAppliance {
+    type: "wled";
+    topic: string;
+    url: string;
+    room: string;
+    label: string;
+    tags: string[];
+}
+
 interface PairedAppliance {
     type: "paired";
     room: string;
@@ -77,6 +86,7 @@ export type Appliance =
     | AtenAppliance
     | KitchenlightAppliance
     | MusicAppliance
+    | WLEDAppliance
     | PairedAppliance;
 
 /** Parse the first 3 bytes as RGB. Works for all color lamp types. */
@@ -300,6 +310,14 @@ export const appliances: Appliance[] = [
         tags: ["tab/normal"],
     },
     {
+        type: "wled",
+        topic: "wled/wohnzimmer/wled-1",
+        url: "http://wled-wohnzimmer.local/",
+        room: "wohnzimmer",
+        label: "WLED 1",
+        tags: ["tab/normal"],
+    },
+    {
         type: "dmx7ch",
         topic: "dmx/wohnzimmer/mitte1",
         room: "wohnzimmer",
@@ -430,6 +448,14 @@ export const appliances: Appliance[] = [
         topic: "relais/fnord/dmx",
         room: "fnord",
         label: "DMX",
+        tags: ["tab/normal"],
+    },
+    {
+        type: "wled",
+        topic: "wled/fnord/wled-1",
+        url: "http://wled-fnord.local/",
+        room: "fnord",
+        label: "WLED 1",
         tags: ["tab/normal"],
     },
     {

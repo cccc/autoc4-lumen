@@ -22,6 +22,9 @@ export const subscriptions = [
     // DMX
     "dmx/+/+",
 
+    // WLED
+    "wled/#",
+
     // Club state
     "club/status",
     "club/status/message",
