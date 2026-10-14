@@ -52,9 +52,11 @@ function SettingsDropdown() {
     const { pref: motionPref, setPref: setMotionPref } = useReducedMotion();
     const navigate = useNavigate();
 
-    function switchViewMode(mode: "function" | "room") {
+    async function switchViewMode(mode: "function" | "room") {
         setViewMode(mode);
-        navigate(mode === "function" ? "/light" : `/room/${rooms[0].id}`);
+        return navigate(
+            mode === "function" ? "/light" : `/room/${rooms[0].id}`,
+        );
     }
 
     return (
@@ -280,9 +282,9 @@ function SidebarSettings({ onClose }: { onClose: () => void }) {
     const { sendByte } = useMQTTSend();
     const navigate = useNavigate();
 
-    function switchViewMode(mode: "function" | "room") {
+    async function switchViewMode(mode: "function" | "room") {
         setViewMode(mode);
-        navigate(mode === "function" ? "/light" : `/room/${rooms[0].id}`);
+        await navigate(mode === "function" ? "/light" : `/room/${rooms[0].id}`);
         onClose();
     }
 
