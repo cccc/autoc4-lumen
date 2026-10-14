@@ -24,8 +24,6 @@ import {
 } from "@/components/ui/sheet";
 import { AdminOnly } from "@/lib/admin-context";
 import { useCyber } from "@/lib/cyber-context";
-import { confirm } from "@/lib/dialog";
-import { useMQTTSend } from "@/lib/mqtt";
 import { useTheme } from "@/lib/theme-context";
 import { useReducedMotion } from "@/lib/reduced-motion";
 import { cn } from "@/lib/utils";
@@ -33,6 +31,7 @@ import { useViewMode } from "@/lib/view-mode";
 import { rooms } from "@/lib/appliances";
 import StatusIndicator from "@/components/layout/navbar/StatusIndicator";
 import TimeDisplay from "@/components/layout/navbar/TimeDisplay";
+import ShutdownButton from "@/components/layout/navbar/ShutdownButton";
 
 const functionNavItems = [
     { to: "/light", label: "Light" },
@@ -117,62 +116,16 @@ function SettingsDropdown() {
     );
 }
 
-function ShutdownButton() {
-    const { sendByte } = useMQTTSend();
-
-    function handleShutdown() {
-        confirm({
-            title: "Shutdown",
-            description:
-                "Are you sure you want to shut down the club? This will result in many of the lamps and electrical devices being turned off.\n\nBefore shutting down the club make sure all windows are closed.",
-            confirmLabel: (
-                <span className="inline-flex items-center gap-1.5">
-                    <Power className="size-4" /> Shutdown
-                </span>
-            ),
-            onConfirm: () => sendByte("club/shutdown", 0),
-        });
-    }
-
-    return (
-        <button
-            type="button"
-            className="inline-flex items-center justify-center gap-1.5 h-9 px-2 rounded-md text-destructive hover:bg-destructive/10 transition-colors text-sm"
-            onClick={handleShutdown}
-            title="Shutdown"
-        >
-            <Power className="size-4" />
-            <span className="hidden lg:inline">Shutdown</span>
-        </button>
-    );
-}
-
 function SidebarSettings({ onClose }: { onClose: () => void }) {
     const { theme, setTheme } = useTheme();
     const { mode: viewMode, setMode: setViewMode } = useViewMode();
     const { pref: motionPref, setPref: setMotionPref } = useReducedMotion();
-    const { sendByte } = useMQTTSend();
     const navigate = useNavigate();
 
     async function switchViewMode(mode: "function" | "room") {
         setViewMode(mode);
         await navigate(mode === "function" ? "/light" : `/room/${rooms[0].id}`);
         onClose();
-    }
-
-    function handleShutdown() {
-        onClose();
-        confirm({
-            title: "Shutdown",
-            description:
-                "Are you sure you want to shut down the club? This will result in many of the lamps and electrical devices being turned off.\n\nBefore shutting down the club make sure all windows are closed.",
-            confirmLabel: (
-                <span className="inline-flex items-center gap-1.5">
-                    <Power className="size-4" /> Shutdown
-                </span>
-            ),
-            onConfirm: () => sendByte("club/shutdown", 0),
-        });
     }
 
     const themeOptions = [
@@ -266,14 +219,13 @@ function SidebarSettings({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="pt-2">
-                <button
-                    type="button"
+                <ShutdownButton
                     className="flex items-center gap-3 w-full px-4 py-3 text-sm text-destructive hover:bg-destructive/10 transition-colors text-left"
-                    onClick={handleShutdown}
+                    onClick={onClose}
                 >
                     <Power className="size-4" />
                     Shutdown
-                </button>
+                </ShutdownButton>
             </div>
         </div>
     );
@@ -364,7 +316,13 @@ export default function Navbar() {
             {/* Desktop controls */}
             <div className="hidden md:flex items-center gap-1">
                 <SettingsDropdown />
-                <ShutdownButton />
+                <ShutdownButton
+                    className="inline-flex items-center justify-center gap-1.5 h-9 px-2 rounded-md text-destructive hover:bg-destructive/10 transition-colors text-sm"
+                    title="Shutdown"
+                >
+                    <Power className="size-4" />
+                    <span className="hidden lg:inline">Shutdown</span>
+                </ShutdownButton>
             </div>
 
             <StatusIndicator variant="navbar" />
