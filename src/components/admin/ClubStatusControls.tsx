@@ -7,7 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export default function ClubStatusControls() {
-    const statusMessage = useMQTTString("club/status/message") || "";
+    const statusMessage = useMQTTString("club/status/message") || "\0";
     const [messageInput, setMessageInput] = useState("");
 
     const { sendData, sendByte } = useMQTTSend();
@@ -73,7 +73,11 @@ export default function ClubStatusControls() {
                             <form onSubmit={handleSetMessage} className="flex">
                                 <Input
                                     type="text"
-                                    placeholder={statusMessage}
+                                    placeholder={
+                                        statusMessage === "\0"
+                                            ? ""
+                                            : statusMessage
+                                    }
                                     value={messageInput}
                                     onChange={(e) =>
                                         setMessageInput(e.target.value)
