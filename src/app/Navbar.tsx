@@ -1,8 +1,5 @@
 import {
     Check,
-    CircleCheck,
-    CircleDashed,
-    CircleMinus,
     LayoutGrid,
     Menu,
     Moon,
@@ -11,7 +8,7 @@ import {
     Sun,
     Snail,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router";
 import {
     DropdownMenu,
@@ -25,20 +22,17 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
-import { AdminOnly, useAdmin } from "@/lib/admin-context";
+import { AdminOnly } from "@/lib/admin-context";
 import { useCyber } from "@/lib/cyber-context";
 import { confirm } from "@/lib/dialog";
-import {
-    useMQTTByte,
-    useMQTTConnected,
-    useMQTTSend,
-    useMQTTValue,
-} from "@/lib/mqtt";
+import { useMQTTSend } from "@/lib/mqtt";
 import { useTheme } from "@/lib/theme-context";
 import { useReducedMotion } from "@/lib/reduced-motion";
 import { cn } from "@/lib/utils";
 import { useViewMode } from "@/lib/view-mode";
 import { rooms } from "@/lib/appliances";
+import StatusIndicator from "@/components/layout/navbar/StatusIndicator";
+import TimeDisplay from "@/components/layout/navbar/TimeDisplay";
 
 const functionNavItems = [
     { to: "/light", label: "Light" },
@@ -123,85 +117,6 @@ function SettingsDropdown() {
     );
 }
 
-function StatusIndicator() {
-    const connected = useMQTTConnected();
-    const clubStatus = useMQTTByte("club/status");
-    const { handleClickTrigger } = useAdmin();
-    const isOpen = clubStatus !== undefined && clubStatus !== 0;
-
-    let label: string;
-    let colorClass: string;
-    let Icon: typeof CircleCheck;
-
-    if (!connected) {
-        label = "Disconnected";
-        colorClass = "text-muted-foreground";
-        Icon = CircleDashed;
-    } else if (clubStatus === undefined) {
-        label = "Unknown";
-        colorClass = "text-muted-foreground";
-        Icon = CircleDashed;
-    } else if (isOpen) {
-        label = "Open";
-        colorClass = "text-status-open";
-        Icon = CircleCheck;
-    } else {
-        label = "Closed";
-        colorClass = "text-status-closed";
-        Icon = CircleMinus;
-    }
-
-    return (
-        <button
-            type="button"
-            className={cn(
-                "inline-flex items-center justify-center gap-1.5 h-9 px-2 rounded-md transition-colors text-sm",
-                colorClass,
-            )}
-            onClick={handleClickTrigger}
-            title={
-                !connected ? "Disconnected" : `Club is ${label.toLowerCase()}`
-            }
-        >
-            <Icon className="size-4" />
-            <span className="hidden lg:inline">{label}</span>
-        </button>
-    );
-}
-
-function pad2(n: number): string {
-    return n.toString().padStart(2, "0");
-}
-
-function TimeDisplay() {
-    const payload = useMQTTValue("time");
-
-    const [localTime, setLocalTime] = useState(() => {
-        const now = new Date();
-        return `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-    });
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            const now = new Date();
-            setLocalTime(`${pad2(now.getHours())}:${pad2(now.getMinutes())}`);
-        }, 10000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const timeStr = useMemo(() => {
-        if (!payload || payload.bytes.length < 7) return null;
-        const b = payload.bytes;
-        return `${pad2(b[0])}:${pad2(b[1])}`;
-    }, [payload]);
-
-    return (
-        <span className="hidden lg:inline text-xs font-mono text-muted-foreground mx-1">
-            {timeStr ?? localTime}
-        </span>
-    );
-}
-
 function ShutdownButton() {
     const { sendByte } = useMQTTSend();
 
@@ -228,49 +143,6 @@ function ShutdownButton() {
         >
             <Power className="size-4" />
             <span className="hidden lg:inline">Shutdown</span>
-        </button>
-    );
-}
-
-function SidebarStatus() {
-    const connected = useMQTTConnected();
-    const clubStatus = useMQTTByte("club/status");
-    const { handleClickTrigger } = useAdmin();
-    const isOpen = clubStatus !== undefined && clubStatus !== 0;
-
-    let label: string;
-    let colorClass: string;
-    let Icon: typeof CircleCheck;
-
-    if (!connected) {
-        label = "Disconnected";
-        colorClass = "text-muted-foreground";
-        Icon = CircleDashed;
-    } else if (clubStatus === undefined) {
-        label = "Unknown";
-        colorClass = "text-muted-foreground";
-        Icon = CircleDashed;
-    } else if (isOpen) {
-        label = "Open";
-        colorClass = "text-status-open";
-        Icon = CircleCheck;
-    } else {
-        label = "Closed";
-        colorClass = "text-status-closed";
-        Icon = CircleMinus;
-    }
-
-    return (
-        <button
-            type="button"
-            className={cn(
-                "flex items-center gap-3 w-full px-4 py-3 text-sm transition-colors text-left",
-                colorClass,
-            )}
-            onClick={handleClickTrigger}
-        >
-            <Icon className="size-4" />
-            {label}
         </button>
     );
 }
@@ -312,7 +184,7 @@ function SidebarSettings({ onClose }: { onClose: () => void }) {
     return (
         <div className="flex flex-col mt-4 divide-y divide-border">
             <div className="pb-2">
-                <SidebarStatus />
+                <StatusIndicator variant="sidebar" />
             </div>
 
             <div className="py-2">
@@ -495,7 +367,7 @@ export default function Navbar() {
                 <ShutdownButton />
             </div>
 
-            <StatusIndicator />
+            <StatusIndicator variant="navbar" />
 
             {/* Mobile menu for settings */}
             <button
