@@ -17,7 +17,6 @@ function BusleisteModule({ name }: BusleisteModuleProps) {
     const activeInterrupt = useMQTTString("busleiste/active_interrupt");
     const enabledByte = useMQTTByte(`busleiste/modules/${name}/enabled`);
     const { sendData, sendByte } = useMQTTSend();
-    const [textValue, setTextValue] = useState("");
 
     const isActiveModule = activeModule === name;
     const isInterrupt = activeInterrupt === name;
@@ -33,20 +32,6 @@ function BusleisteModule({ name }: BusleisteModuleProps) {
         sendByte(`busleiste/modules/${name}/enabled`, enabled ? 0 : 1, {
             retained: true,
         });
-    }
-
-    function handleTextSubmit() {
-        if (textValue === "") {
-            sendData("busleiste/modules/Text/settings", "", true);
-        } else {
-            const lines = textValue.split("\n");
-            while (lines.length < 4) lines.push("");
-            sendData(
-                "busleiste/modules/Text/settings",
-                JSON.stringify(lines),
-                true,
-            );
-        }
     }
 
     return (
@@ -89,19 +74,44 @@ function BusleisteModule({ name }: BusleisteModuleProps) {
                     &#x23fb;
                 </button>
             </div>
-            {name === "Text" && (
-                <div className="w-full flex gap-2 items-start">
-                    <textarea
-                        className="flex-1 rounded border border-input bg-background px-2 py-1 text-sm font-mono resize-y"
-                        rows={4}
-                        value={textValue}
-                        onChange={(e) => setTextValue(e.target.value)}
-                    />
-                    <Button size="sm" onClick={handleTextSubmit}>
-                        Submit
-                    </Button>
-                </div>
-            )}
+            {name === "Text" && <TextModuleSettings />}
+        </div>
+    );
+}
+
+function TextModuleSettings() {
+    const textSettings =
+        useMQTTJSON<string[]>("busleiste/modules/Text/settings") || [];
+    const [textValue, setTextValue] = useState("");
+
+    const { sendData } = useMQTTSend();
+
+    function handleTextSubmit() {
+        if (textValue === "") {
+            sendData("busleiste/modules/Text/settings", "", true);
+        } else {
+            const lines = textValue.split("\n");
+            while (lines.length < 4) lines.push("");
+            sendData(
+                "busleiste/modules/Text/settings",
+                JSON.stringify(lines),
+                true,
+            );
+        }
+    }
+
+    return (
+        <div className="w-full flex gap-2 items-start">
+            <textarea
+                className="flex-1 rounded border border-input bg-background px-2 py-1 text-sm font-mono resize-y"
+                placeholder={textSettings ? textSettings.join("\n") : ""}
+                rows={4}
+                value={textValue}
+                onChange={(e) => setTextValue(e.target.value)}
+            />
+            <Button size="sm" onClick={handleTextSubmit}>
+                Submit
+            </Button>
         </div>
     );
 }

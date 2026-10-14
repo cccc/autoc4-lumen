@@ -52,6 +52,7 @@ export const subscriptions = [
     // Busleiste
     "busleiste/modules",
     "busleiste/modules/+/enabled",
+    "busleiste/modules/Text/settings",
     "busleiste/active_module",
     "busleiste/active_interrupt",
 
