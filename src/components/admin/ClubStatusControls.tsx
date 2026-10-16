@@ -5,6 +5,7 @@ import { Input } from "../ui/input";
 import { useMQTTSend, useMQTTString } from "@/lib/mqtt";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Save, X } from "lucide-react";
 
 export default function ClubStatusControls() {
     const statusMessage = useMQTTString("club/status/message") || "\0";
@@ -82,12 +83,13 @@ export default function ClubStatusControls() {
                                     onChange={(e) =>
                                         setMessageInput(e.target.value)
                                     }
-                                    className="rounded-r-none border-r-0"
+                                    className="rounded-r-none border-r-0 bg-white/50"
                                 />
                                 <Button
                                     type="submit"
                                     className="rounded-none border-x-0"
                                 >
+                                    <Save />
                                     Set
                                 </Button>
                                 <Button
@@ -96,6 +98,7 @@ export default function ClubStatusControls() {
                                     className="rounded-l-none"
                                     onClick={handleClearMessage}
                                 >
+                                    <X />
                                     Clear
                                 </Button>
                             </form>
