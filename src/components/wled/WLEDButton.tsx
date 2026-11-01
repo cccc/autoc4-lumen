@@ -1,7 +1,8 @@
 import { useMQTTString } from "@/lib/mqtt";
-import { Link } from "react-router";
-import { ExternalLink } from "lucide-react";
+import { Star } from "lucide-react";
 import BigButton from "../ui/big-button";
+import WLEDDialog from "./WLEDDialog";
+import { showDialog } from "@/lib/dialog";
 
 interface WLEDButtonProps {
     label: string;
@@ -19,10 +20,15 @@ export default function WLEDButton({ topic, label, url }: WLEDButtonProps) {
                 : "off"
             : "unknown";
 
+    function openDialog() {
+        console.log("Opening WLED dialog for", topic, label, url);
+        void showDialog(WLEDDialog, { topic, label, url });
+    }
+
     return (
-        <BigButton render={<Link to={url} target="_blank" />} color={state}>
+        <BigButton color={state} onClick={openDialog}>
             <BigButton.Icon>
-                <ExternalLink />
+                <Star />
             </BigButton.Icon>
             <BigButton.Label>{label}</BigButton.Label>
         </BigButton>
