@@ -20,11 +20,11 @@ import StatusTab from "@/app/tabs/StatusTab";
 import { AdminProvider } from "@/lib/admin-context";
 import { rooms } from "@/lib/appliances";
 import { CyberProvider } from "@/lib/cyber-context";
-import { DialogProvider } from "@/lib/dialog";
 import { connectMQTT } from "@/lib/mqtt";
 import { usePWAStore } from "@/lib/pwa";
 import { ThemeProvider } from "@/lib/theme-context";
 import { useViewMode } from "@/lib/view-mode";
+import { DialogHost } from "./lib/dialog";
 
 interface RouteHandle {
     title?: string | ((params: Record<string, string | undefined>) => string);
@@ -111,6 +111,9 @@ function Layout() {
             <div className="[view-transition-name:page-content]">
                 <Outlet />
             </div>
+            <Notifications />
+            <Toaster richColors />
+            <DialogHost />
         </div>
     );
 }
@@ -218,9 +221,6 @@ export default function App() {
             <AdminProvider>
                 <CyberProvider>
                     <RouterProvider router={router} />
-                    <Notifications />
-                    <Toaster richColors />
-                    <DialogProvider />
                 </CyberProvider>
             </AdminProvider>
         </ThemeProvider>

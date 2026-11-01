@@ -1,5 +1,5 @@
 import type { ComponentProps, MouseEvent } from "react";
-import { confirm } from "@/lib/dialog";
+import { confirm } from "@/lib/confimation-dialog";
 import { useMQTTSend } from "@/lib/mqtt";
 import { Power } from "lucide-react";
 
@@ -11,7 +11,7 @@ export default function ShutdownButton({
 
     function handleShutdown(e: MouseEvent<HTMLButtonElement>) {
         onClick?.(e);
-        confirm({
+        void confirm({
             title: "Shutdown",
             description:
                 "Are you sure you want to shut down the club? This will result in many of the lamps and electrical devices being turned off.\n\nBefore shutting down the club make sure all windows are closed.",
@@ -20,8 +20,7 @@ export default function ShutdownButton({
                     <Power className="size-4" /> Shutdown
                 </span>
             ),
-            onConfirm: () => sendByte("club/shutdown", 0),
-        });
+        }).then((result) => result && sendByte("club/shutdown", 0));
     }
 
     return <button type="button" {...props} onClick={handleShutdown} />;

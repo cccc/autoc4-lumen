@@ -8,8 +8,14 @@ import { hexToRgb, rgbToHex } from "@/lib/color";
 import { useMQTTSend } from "@/lib/mqtt";
 import { sendByte, sendData } from "@/lib/mqtt/client";
 import { mqttStore } from "@/lib/mqtt/store";
-import { closeDialog, showDialog } from "@/lib/dialog";
 import ColorPicker from "./ColorPicker";
+import {
+    BaseDialog,
+    DialogCloseButton,
+    showDialog,
+    type BaseDialogProps,
+} from "@/lib/dialog";
+import { DialogFooter } from "../ui/dialog";
 
 function buildMasterPayload(type: ColorAppliance["type"], c: RGB): Uint8Array {
     const isBlack = c.r === 0 && c.g === 0 && c.b === 0;
@@ -54,13 +60,11 @@ function useCommonColorHex(
     });
 }
 
-function MasterEditor({
-    lamps,
-    initialColor,
-}: {
+interface MasterEditorProps extends BaseDialogProps {
     lamps: ColorAppliance[];
     initialColor: RGB;
-}) {
+}
+function MasterEditor({ title, lamps, initialColor }: MasterEditorProps) {
     const [color, setColor] = useState<RGB>(initialColor);
     const { sendData: send } = useMQTTSend();
 
@@ -75,16 +79,12 @@ function MasterEditor({
     );
 
     return (
-        <div className="space-y-3">
+        <BaseDialog title={title} className="sm:max-w-lg">
             <ColorPicker color={color} onChange={handleChange} />
-            <button
-                type="button"
-                className="px-4 py-2 rounded-lg text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 active:scale-95"
-                onClick={() => closeDialog()}
-            >
-                Close
-            </button>
-        </div>
+            <DialogFooter>
+                <DialogCloseButton>Close</DialogCloseButton>
+            </DialogFooter>
+        </BaseDialog>
     );
 }
 
@@ -117,17 +117,12 @@ export default function DMXMaster({
     }
 
     function openEditor() {
-        showDialog({
+        void showDialog(MasterEditor, {
             title: "Master",
-            className: "sm:max-w-lg",
-            content: (
-                <MasterEditor
-                    lamps={lamps}
-                    initialColor={
-                        commonHex ? hexToRgb(commonHex) : { r: 0, g: 0, b: 0 }
-                    }
-                />
-            ),
+            lamps,
+            initialColor: commonHex
+                ? hexToRgb(commonHex)
+                : { r: 0, g: 0, b: 0 },
         });
     }
 

@@ -4,9 +4,10 @@ import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
 import { useMQTTSend } from "@/lib/mqtt";
 import { useState } from "react";
-import { closeDialog } from "@/lib/dialog";
 import { cn } from "cn";
 import { toast } from "sonner";
+import { DialogFooter } from "../ui/dialog";
+import { BaseDialog, useDialog } from "@/lib/dialog";
 
 function parseHexBytes(input: string): Uint8Array | null {
     const trimmed = input.trim();
@@ -28,6 +29,7 @@ export default function MQTTPublishDialog() {
     const [mode, setMode] = useState<"hex" | "text">("hex");
     const [retained, setRetained] = useState(false);
     const { sendData } = useMQTTSend();
+    const { remove } = useDialog();
 
     function handleSend() {
         if (!topic.trim()) {
@@ -49,85 +51,86 @@ export default function MQTTPublishDialog() {
         }
 
         toast.success(`Sent to ${topic}`);
-        closeDialog();
+        remove();
     }
 
     return (
-        <div className="space-y-4">
-            <div className="space-y-1">
-                <label className="text-sm font-medium">Topic</label>
-                <Input
-                    type="text"
-                    placeholder="licht/wohnzimmer/tuer"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                />
-            </div>
-
-            <div className="space-y-1">
-                <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">Payload</label>
-                    <div className="flex gap-1 text-xs">
-                        <button
-                            type="button"
-                            className={cn(
-                                "px-2 py-0.5 rounded",
-                                mode === "hex"
-                                    ? "bg-primary text-primary-foreground"
-                                    : "text-muted-foreground hover:text-foreground",
-                            )}
-                            onClick={() => setMode("hex")}
-                        >
-                            Hex
-                        </button>
-                        <button
-                            type="button"
-                            className={cn(
-                                "px-2 py-0.5 rounded",
-                                mode === "text"
-                                    ? "bg-primary text-primary-foreground"
-                                    : "text-muted-foreground hover:text-foreground",
-                            )}
-                            onClick={() => setMode("text")}
-                        >
-                            Text
-                        </button>
-                    </div>
+        <BaseDialog title="Send MQTT Message">
+            <div className="space-y-4">
+                <div className="space-y-1">
+                    <label className="text-sm font-medium">Topic</label>
+                    <Input
+                        type="text"
+                        placeholder="licht/wohnzimmer/tuer"
+                        value={topic}
+                        onChange={(e) => setTopic(e.target.value)}
+                    />
                 </div>
-                <Input
-                    type="text"
-                    placeholder={
-                        mode === "hex"
-                            ? "00 FF 1A or 0x00 0xFF 0x1A"
-                            : "Hello world"
-                    }
-                    value={payload}
-                    onChange={(e) => setPayload(e.target.value)}
-                    className="font-mono"
-                />
-                {mode === "hex" && (
-                    <p className="text-xs text-muted-foreground">
-                        Space-separated hex bytes. Empty for 0 bytes.
-                    </p>
-                )}
+
+                <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Payload</label>
+                        <div className="flex gap-1 text-xs">
+                            <button
+                                type="button"
+                                className={cn(
+                                    "px-2 py-0.5 rounded",
+                                    mode === "hex"
+                                        ? "bg-primary text-primary-foreground"
+                                        : "text-muted-foreground hover:text-foreground",
+                                )}
+                                onClick={() => setMode("hex")}
+                            >
+                                Hex
+                            </button>
+                            <button
+                                type="button"
+                                className={cn(
+                                    "px-2 py-0.5 rounded",
+                                    mode === "text"
+                                        ? "bg-primary text-primary-foreground"
+                                        : "text-muted-foreground hover:text-foreground",
+                                )}
+                                onClick={() => setMode("text")}
+                            >
+                                Text
+                            </button>
+                        </div>
+                    </div>
+                    <Input
+                        type="text"
+                        placeholder={
+                            mode === "hex"
+                                ? "00 FF 1A or 0x00 0xFF 0x1A"
+                                : "Hello world"
+                        }
+                        value={payload}
+                        onChange={(e) => setPayload(e.target.value)}
+                        className="font-mono"
+                    />
+                    {mode === "hex" && (
+                        <p className="text-xs text-muted-foreground">
+                            Space-separated hex bytes. Empty for 0 bytes.
+                        </p>
+                    )}
+                </div>
+
+                <label className="flex items-center gap-2 text-sm">
+                    <Switch
+                        checked={retained}
+                        onCheckedChange={(v) => setRetained(v as boolean)}
+                    />
+                    Retained
+                </label>
             </div>
-
-            <label className="flex items-center gap-2 text-sm">
-                <Switch
-                    checked={retained}
-                    onCheckedChange={(v) => setRetained(v as boolean)}
-                />
-                Retained
-            </label>
-
-            <div className="flex gap-2">
+            <DialogFooter>
                 <Button onClick={handleSend}>
                     <Send className="size-4 mr-2" /> Send
                 </Button>
-                <Button variant="secondary" onClick={() => closeDialog()}>
+                <Button variant="secondary" onClick={() => remove()}>
                     Close
                 </Button>
-            </div>
-        </div>
+            </DialogFooter>
+        </BaseDialog>
     );
 }

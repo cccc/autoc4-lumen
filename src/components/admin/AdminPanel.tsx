@@ -1,7 +1,7 @@
 import { Power } from "lucide-react";
 import BusleisteControl from "@/components/busleiste/BusleisteControl";
 import { Button } from "@/components/ui/button";
-import { confirm } from "@/lib/dialog";
+import { confirm } from "@/lib/confimation-dialog";
 import { useMQTTSend } from "@/lib/mqtt";
 import DebugSettings from "./DebugSettings";
 import ClubStatusControls from "./ClubStatusControls";
@@ -14,7 +14,7 @@ export default function AdminPanel() {
     }
 
     function handleForceShutdown() {
-        confirm({
+        void confirm({
             title: "Force Shutdown",
             description:
                 "This bypasses safety checks such as window sensors. Only use this if you know what you are doing.\n\nThe club will be shut down immediately without verifying that windows are closed.",
@@ -23,8 +23,7 @@ export default function AdminPanel() {
                     <Power className="size-4" /> Force Shutdown
                 </span>
             ),
-            onConfirm: () => sendByte("club/shutdown", 0x44),
-        });
+        }).then((result) => result && sendByte("club/shutdown", 0x44));
     }
 
     return (

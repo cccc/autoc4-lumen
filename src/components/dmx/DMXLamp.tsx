@@ -4,8 +4,13 @@ import type { RGB } from "@/lib/color";
 import { rgbToHex } from "@/lib/color";
 import { useMQTTSend, useMQTTValue } from "@/lib/mqtt";
 import { cn } from "@/lib/utils";
-import { showDialog, closeDialog } from "@/lib/dialog";
 import ColorPicker from "./ColorPicker";
+import {
+    BaseDialog,
+    DialogCloseButton,
+    showDialog,
+    type BaseDialogProps,
+} from "@/lib/dialog";
 
 export type LampType = "rgb" | "rgbw" | "dmx4ch" | "dmx7ch";
 
@@ -65,19 +70,21 @@ function buildPoweroff(type: LampType): Uint8Array {
     }
 }
 
+interface LampEditorProps extends BaseDialogProps {
+    topic: string;
+    type: LampType;
+    initialColor: RGB;
+    initialWhite: number;
+    initialIntensity: number;
+}
 function LampEditor({
     topic,
     type,
     initialColor,
     initialWhite,
     initialIntensity,
-}: {
-    topic: string;
-    type: LampType;
-    initialColor: RGB;
-    initialWhite: number;
-    initialIntensity: number;
-}) {
+    title,
+}: LampEditorProps) {
     const [color, setColor] = useState<RGB>(initialColor);
     const [white, setWhite] = useState(initialWhite);
     const [intensity, setIntensity] = useState(initialIntensity);
@@ -130,40 +137,43 @@ function LampEditor({
     }, [topic, type, sendData]);
 
     return (
-        <div className="space-y-3">
-            <ColorPicker
-                color={color}
-                onChange={handleColorChange}
-                showWhite={type === "rgbw"}
-                white={white}
-                onWhiteChange={type === "rgbw" ? handleWhiteChange : undefined}
-            />
-            {(type === "dmx7ch" || type === "dmx4ch") && (
-                <AdvancedSection
-                    type={type}
-                    topic={topic}
-                    intensity={intensity}
-                    onIntensityChange={handleIntensityChange}
-                    sendData={sendData}
+        <BaseDialog title={title} className="sm:max-w-lg">
+            <div className="space-y-3">
+                <ColorPicker
+                    color={color}
+                    onChange={handleColorChange}
+                    showWhite={type === "rgbw"}
+                    white={white}
+                    onWhiteChange={
+                        type === "rgbw" ? handleWhiteChange : undefined
+                    }
                 />
-            )}
-            <div className="flex gap-2">
-                <button
-                    type="button"
-                    className="px-4 py-2 rounded-lg text-sm bg-off text-white hover:bg-off-hover active:scale-95"
-                    onClick={handlePoweroff}
-                >
-                    Off
-                </button>
-                <button
-                    type="button"
-                    className="px-4 py-2 rounded-lg text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 active:scale-95"
-                    onClick={() => closeDialog()}
-                >
-                    Close
-                </button>
+                {(type === "dmx7ch" || type === "dmx4ch") && (
+                    <AdvancedSection
+                        type={type}
+                        topic={topic}
+                        intensity={intensity}
+                        onIntensityChange={handleIntensityChange}
+                        sendData={sendData}
+                    />
+                )}
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        className="px-4 py-2 rounded-lg text-sm bg-off text-white hover:bg-off-hover active:scale-95"
+                        onClick={handlePoweroff}
+                    >
+                        Off
+                    </button>
+                    <DialogCloseButton
+                        type="button"
+                        className="px-4 py-2 rounded-lg text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 active:scale-95"
+                    >
+                        Close
+                    </DialogCloseButton>
+                </div>
             </div>
-        </div>
+        </BaseDialog>
     );
 }
 
@@ -315,18 +325,13 @@ export default function DMXLamp({ label, topic, type }: DMXLampProps) {
     }
 
     function openEditor() {
-        showDialog({
+        void showDialog(LampEditor, {
             title: label,
-            className: "sm:max-w-lg",
-            content: (
-                <LampEditor
-                    topic={topic}
-                    type={type}
-                    initialColor={color}
-                    initialWhite={white}
-                    initialIntensity={intensity}
-                />
-            ),
+            topic,
+            type,
+            initialColor: color,
+            initialWhite: white,
+            initialIntensity: intensity,
         });
     }
 

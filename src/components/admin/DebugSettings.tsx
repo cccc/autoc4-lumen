@@ -58,12 +58,7 @@ export default function DebugSettings() {
             <Button
                 variant="outline"
                 className="w-full mt-4"
-                onClick={() =>
-                    showDialog({
-                        title: "Send MQTT Message",
-                        content: <MQTTPublishDialog />,
-                    })
-                }
+                onClick={() => showDialog(MQTTPublishDialog)}
             >
                 <Send className="size-4 mr-2" /> Send Message
             </Button>
