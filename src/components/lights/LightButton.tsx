@@ -1,6 +1,6 @@
 import { Lightbulb, LightbulbOff, Power } from "lucide-react";
 import BigButton from "../ui/big-button";
-import MQTTSwitch from "./MQTTSwitch";
+import MQTTSwitch from "@/lib/mqtt/MQTTSwitch";
 
 interface LightButtonProps {
     topic: string;

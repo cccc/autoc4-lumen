@@ -1,4 +1,4 @@
-import Appliances from "@/components/lights/Appliances";
+import Appliances from "@/components/appliances/Appliances";
 import { gridStyle } from "@/lib/grid";
 import { rooms, useAppliances } from "@/lib/appliances";
 

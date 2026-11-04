@@ -1,6 +1,6 @@
 import { Power } from "lucide-react";
 import BigButton from "../ui/big-button";
-import TasmotaSwitch from "./TasmotaSwitch";
+import TasmotaSwitch from "@/lib/mqtt/TasmotaSwitch";
 
 interface TasmotaButtonProps {
     topic: string;

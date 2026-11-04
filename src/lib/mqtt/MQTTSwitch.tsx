@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useMQTTByte, useMQTTSend } from "@/lib/mqtt";
+import { useMQTTByte, useMQTTSend } from "./hooks";
 
 export type SwitchState = "on" | "off" | "unknown";
 

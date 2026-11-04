@@ -37,10 +37,18 @@ interface DimmerAppliance {
     tags: string[];
 }
 
+/** Separate power relay for an appliance, rendered as a switch in its section header. */
+export interface PowerControl {
+    topic: string;
+    /** "mqtt" reads and writes a single byte on the topic; "tasmota" uses
+     *  {topic}/POWER and {topic}/cmnd/power. Defaults to "mqtt". */
+    protocol?: "mqtt" | "tasmota";
+}
+
 interface AtenAppliance {
     type: "aten";
     topic: string;
-    powerTopic: string;
+    power?: PowerControl;
     room: string;
     label: string;
     tags: string[];
@@ -48,6 +56,7 @@ interface AtenAppliance {
 
 interface KitchenlightAppliance {
     type: "kitchenlight";
+    power?: PowerControl;
     room: string;
     label: string;
     tags: string[];
@@ -100,11 +109,14 @@ export function getApplianceTopics(appliance: Appliance): string[] {
     switch (appliance.type) {
         case "paired":
             return [appliance.left.topic, appliance.right.topic];
-        case "kitchenlight":
         case "music":
             return [];
+        case "kitchenlight":
+            return appliance.power ? [appliance.power.topic] : [];
         case "aten":
-            return [appliance.topic, appliance.powerTopic];
+            return appliance.power
+                ? [appliance.topic, appliance.power.topic]
+                : [appliance.topic];
         default:
             return [appliance.topic];
     }
@@ -240,7 +252,7 @@ export const appliances: Appliance[] = [
     {
         type: "aten",
         topic: "aten/plenar",
-        powerTopic: "tasmota/plenar/hdmi-matrix",
+        power: { topic: "tasmota/plenar/hdmi-matrix", protocol: "tasmota" },
         room: "plenar",
         label: "HDMI Matrix",
         tags: ["tab/media"],
@@ -410,8 +422,9 @@ export const appliances: Appliance[] = [
     },
     {
         type: "kitchenlight",
+        power: { topic: "power/wohnzimmer/kitchenlight" },
         room: "wohnzimmer",
-        label: "Kitchenlight",
+        label: "LED-Wand",
         tags: ["tab/kl"],
     },
     {

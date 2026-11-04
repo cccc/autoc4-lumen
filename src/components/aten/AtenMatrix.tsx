@@ -1,5 +1,3 @@
-import TasmotaSwitch from "@/components/lights/TasmotaSwitch";
-import { Switch } from "@/components/ui/switch";
 import { useMQTTByte, useMQTTJSON, useMQTTSend } from "@/lib/mqtt";
 import { cn } from "@/lib/utils";
 
@@ -8,7 +6,6 @@ const INPUTS = ["01", "02", "03", "04"] as const;
 
 interface AtenMatrixProps {
     topic: string;
-    powerTopic?: string;
 }
 
 function MatrixRow({
@@ -49,7 +46,7 @@ function MatrixRow({
     );
 }
 
-export default function AtenMatrix({ topic, powerTopic }: AtenMatrixProps) {
+export default function AtenMatrix({ topic }: AtenMatrixProps) {
     const connectionByte = useMQTTByte(`${topic}/connection`);
     const routingState = useMQTTJSON<Record<string, string[]>>(
         `${topic}/state`,
@@ -68,22 +65,6 @@ export default function AtenMatrix({ topic, powerTopic }: AtenMatrixProps) {
 
     return (
         <div className="space-y-1.5">
-            <div className="flex items-center mb-2">
-                <h3 className="text-sm font-semibold flex-1">
-                    Aten HDMI-Matrix
-                </h3>
-                {powerTopic && (
-                    <TasmotaSwitch topic={powerTopic}>
-                        {(state, toggle) => (
-                            <Switch
-                                checked={state === "on"}
-                                onCheckedChange={toggle}
-                                disabled={state === "unknown"}
-                            />
-                        )}
-                    </TasmotaSwitch>
-                )}
-            </div>
             {OUTPUTS.map((out, i) => (
                 <MatrixRow
                     key={out}

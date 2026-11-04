@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Lightbulb, Snowflake, Sun } from "lucide-react";
-import MQTTSwitch from "./MQTTSwitch";
+import MQTTSwitch from "@/lib/mqtt/MQTTSwitch";
 
 interface HalfProps {
     topic: string;

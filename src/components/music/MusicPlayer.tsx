@@ -2,13 +2,6 @@ import { Button } from "@/components/ui/button";
 import { useMQTTSend, useMQTTString } from "@/lib/mqtt";
 import { cn } from "@/lib/utils";
 
-const ROOMS = [
-    { id: "wohnzimmer", label: "Wohnzimmer" },
-    { id: "plenar", label: "Plenarsaal" },
-    { id: "fnord", label: "Fnordcenter" },
-    { id: "keller", label: "Keller" },
-] as const;
-
 /** Just the music controls — no card wrapper. */
 export function MusicControls({ room }: { room: string }) {
     const state = useMQTTString(`mpd/${room}/state`);
@@ -81,27 +74,6 @@ export function MusicControls({ room }: { room: string }) {
                     &#x23ED;
                 </Button>
             </div>
-        </div>
-    );
-}
-
-/** Music controls in a card with a label — for use inside room tabs. */
-export function RoomPlayer({ room, label }: { room: string; label: string }) {
-    return (
-        <div className="border rounded-lg p-3">
-            <h3 className="text-sm font-semibold mb-2">{label}</h3>
-            <MusicControls room={room} />
-        </div>
-    );
-}
-
-/** All room players in a grid. */
-export default function MusicPanel() {
-    return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {ROOMS.map(({ id, label }) => (
-                <RoomPlayer key={id} room={id} label={label} />
-            ))}
         </div>
     );
 }

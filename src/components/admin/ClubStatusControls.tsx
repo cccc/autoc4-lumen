@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import MQTTSwitch from "../lights/MQTTSwitch";
+import MQTTSwitch from "@/lib/mqtt/MQTTSwitch";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { useMQTTSend, useMQTTString } from "@/lib/mqtt";

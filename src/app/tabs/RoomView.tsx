@@ -1,7 +1,7 @@
 import { Navigate, useParams } from "react-router";
 import DMXControls from "@/components/dmx/DMXControls";
 import DMXMaster from "@/components/dmx/DMXMaster";
-import Appliances from "@/components/lights/Appliances";
+import Appliances from "@/components/appliances/Appliances";
 import { RoomPresetGrid } from "@/components/presets/PresetPanel";
 import { gridStyle } from "@/lib/grid";
 import type { Module, RoomConfig, TabConfig } from "@/lib/rooms";
