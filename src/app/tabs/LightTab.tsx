@@ -1,5 +1,5 @@
 import RoomPanel from "@/components/lights/RoomPanel";
-import { rooms } from "@/lib/rooms";
+import { rooms } from "@/config/rooms";
 import { TabContent } from "./RoomView";
 
 export default function LightTab() {

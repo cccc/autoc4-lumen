@@ -1,6 +1,7 @@
 import Appliances from "@/components/appliances/Appliances";
 import { gridStyle } from "@/lib/grid";
-import { rooms, useAppliances } from "@/lib/appliances";
+import { rooms } from "@/config/rooms";
+import { useAppliances } from "@/lib/appliances";
 
 function RoomWindows({ id, label }: { id: string; label: string }) {
     const windows = useAppliances({ room: id, only: ["window"] });

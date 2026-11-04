@@ -28,7 +28,7 @@ import { useTheme } from "@/lib/theme-context";
 import { useReducedMotion } from "@/lib/reduced-motion";
 import { cn } from "@/lib/utils";
 import { useViewMode } from "@/lib/view-mode";
-import { rooms } from "@/lib/appliances";
+import { rooms } from "@/config/rooms";
 import StatusIndicator from "@/components/layout/navbar/StatusIndicator";
 import TimeDisplay from "@/components/layout/navbar/TimeDisplay";
 import ShutdownButton from "@/components/layout/navbar/ShutdownButton";

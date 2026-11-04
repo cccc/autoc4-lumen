@@ -1,0 +1,138 @@
+import { defineAppliances } from "@/lib/appliances/types";
+
+export default defineAppliances("plenar", [
+    {
+        type: "switch",
+        topic: "licht/plenar/vornewand",
+        label: "Vorne Wand",
+        tags: ["tab/normal"],
+    },
+    {
+        type: "switch",
+        topic: "licht/plenar/vornefenster",
+        label: "Vorne Fenster",
+        tags: ["tab/normal"],
+    },
+    {
+        type: "switch",
+        topic: "licht/plenar/hintenwand",
+        label: "Hinten Wand",
+        tags: ["tab/normal"],
+    },
+    {
+        type: "switch",
+        topic: "licht/plenar/hintenfenster",
+        label: "Hinten Fenster",
+        tags: ["tab/normal"],
+    },
+    {
+        type: "power",
+        topic: "relais/plenar/amp",
+        label: "Verstärker",
+        tags: ["tab/normal"],
+    },
+    {
+        type: "power",
+        topic: "relais/plenar/dmx",
+        label: "DMX Kannen",
+        tags: ["tab/normal"],
+    },
+    {
+        type: "tasmota",
+        topic: "tasmota/plenar/hdmi-matrix",
+        label: "Matrix",
+        tags: ["tab/normal"],
+    },
+    {
+        type: "tasmota",
+        topic: "tasmota/plenar/plenarsaal-pa",
+        label: "PA",
+        tags: ["tab/normal"],
+    },
+    {
+        type: "dmx7ch",
+        topic: "dmx/plenar/vorne1",
+        label: "Vorne 1",
+        tags: ["tab/rgb"],
+    },
+    {
+        type: "dmx7ch",
+        topic: "dmx/plenar/vorne2",
+        label: "Vorne 2",
+        tags: ["tab/rgb"],
+    },
+    {
+        type: "dmx7ch",
+        topic: "dmx/plenar/vorne3",
+        label: "Vorne 3",
+        tags: ["tab/rgb"],
+    },
+    {
+        type: "dimmer",
+        topic: "dmx/plenar/hinten1",
+        offset: 0,
+        label: "Spot Links",
+        tags: ["tab/normal"],
+    },
+    {
+        type: "dimmer",
+        topic: "dmx/plenar/hinten1",
+        offset: 1,
+        label: "Spot Rechts",
+        tags: ["tab/normal"],
+    },
+    {
+        type: "dmx7ch",
+        topic: "dmx/plenar/hinten2",
+        label: "Hinten 2",
+        tags: ["tab/rgb"],
+    },
+    {
+        type: "dmx7ch",
+        topic: "dmx/plenar/hinten3",
+        label: "Hinten 3",
+        tags: ["tab/rgb"],
+    },
+    {
+        type: "dmx7ch",
+        topic: "dmx/plenar/hinten4",
+        label: "Hinten 4",
+        tags: ["tab/rgb"],
+    },
+    {
+        type: "aten",
+        topic: "aten/plenar",
+        power: { topic: "tasmota/plenar/hdmi-matrix", protocol: "tasmota" },
+        label: "HDMI Matrix",
+        tags: ["tab/media"],
+    },
+    {
+        type: "music",
+        label: "Music",
+        tags: ["tab/media"],
+    },
+    {
+        type: "sensor",
+        topic: "fenster/plenar/vornelinks",
+        label: "Fenster Vorne Links",
+        tags: ["sensor", "window"],
+    },
+    {
+        type: "sensor",
+        topic: "fenster/plenar/vornerechts",
+        label: "Fenster Vorne Rechts",
+        tags: ["sensor", "window"],
+    },
+    {
+        type: "sensor",
+        topic: "fenster/plenar/hintenlinks",
+        label: "Fenster Hinten Links",
+        tags: ["sensor", "window"],
+    },
+    {
+        type: "sensor",
+        topic: "fenster/plenar/hintenrechts",
+        label: "Fenster Hinten Rechts",
+        tags: ["sensor", "window"],
+    },
+]);

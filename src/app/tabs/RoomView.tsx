@@ -5,7 +5,7 @@ import Appliances from "@/components/appliances/Appliances";
 import { RoomPresetGrid } from "@/components/presets/PresetPanel";
 import { gridStyle } from "@/lib/grid";
 import type { Module, RoomConfig, TabConfig } from "@/lib/rooms";
-import { rooms } from "@/lib/rooms";
+import { rooms } from "@/config/rooms";
 
 function ModuleRenderer({
     room,

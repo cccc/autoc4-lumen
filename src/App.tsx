@@ -18,7 +18,7 @@ import RoomView from "@/app/tabs/RoomView";
 import SettingsTab from "@/app/tabs/SettingsTab";
 import StatusTab from "@/app/tabs/StatusTab";
 import { AdminProvider } from "@/lib/admin-context";
-import { rooms } from "@/lib/appliances";
+import { rooms } from "@/config/rooms";
 import { CyberProvider } from "@/lib/cyber-context";
 import { connectMQTT } from "@/lib/mqtt";
 import { usePWAStore } from "@/lib/pwa";

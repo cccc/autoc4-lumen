@@ -1,5 +1,6 @@
 import { Lightbulb, LightbulbOff } from "lucide-react";
-import { extractPresetColors, rooms } from "@/lib/appliances";
+import { rooms } from "@/config/rooms";
+import { extractPresetColors } from "@/lib/appliances";
 import { useMQTTJSON, useMQTTSend } from "@/lib/mqtt";
 import PresetButton from "./PresetButton";
 
