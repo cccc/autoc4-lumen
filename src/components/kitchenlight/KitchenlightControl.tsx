@@ -38,6 +38,7 @@ function hexTo10Bit(hex: string, offset: number): number {
 
 function changeScreen(data: ArrayBuffer) {
     sendData("kitchenlight/change_screen", new Uint8Array(data), true);
+    sendByte("power/wohnzimmer/kitchenlight", 1, { retained: true });
 }
 
 function buildSimple(screenId: number): ArrayBuffer {
