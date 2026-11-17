@@ -1,3 +1,5 @@
+import type { LampType } from "../dmx/lamp-types";
+
 interface SwitchAppliance {
     type: "switch" | "power" | "tasmota";
     topic: string;
@@ -7,7 +9,7 @@ interface SwitchAppliance {
 }
 
 export interface ColorAppliance {
-    type: "dmx7ch" | "dmx4ch" | "rgb" | "rgbw";
+    type: LampType;
     topic: string;
     room: string;
     label: string;

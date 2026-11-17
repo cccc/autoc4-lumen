@@ -109,3 +109,7 @@ export function adjustBrightness(rgb: RGB, factor: number): RGB {
 export function randomColor(brightness: number): RGB {
     return hsvToRgb({ h: Math.random(), s: 1, v: brightness });
 }
+
+export function isBlack(rgb: RGB) {
+    return rgb.r === 0 && rgb.g === 0 && rgb.b === 0;
+}

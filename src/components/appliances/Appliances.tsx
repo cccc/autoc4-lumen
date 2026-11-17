@@ -60,6 +60,7 @@ const registry: {
     dmx4ch: dmxLamp,
     rgb: dmxLamp,
     rgbw: dmxLamp,
+    zrgbw: dmxLamp,
     paired: {
         layout: "tile",
         render: (a) => (

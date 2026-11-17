@@ -2,7 +2,6 @@ import { useCallback, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { RGB } from "@/lib/color";
 import { rgbToHex } from "@/lib/color";
-import { useMQTTSend, useMQTTValue } from "@/lib/mqtt";
 import { cn } from "@/lib/utils";
 import ColorPicker from "./ColorPicker";
 import {
@@ -11,63 +10,15 @@ import {
     showDialog,
     type BaseDialogProps,
 } from "@/lib/dialog";
-
-export type LampType = "rgb" | "rgbw" | "dmx4ch" | "dmx7ch";
+import { type LampType } from "@/lib/dmx/lamp-types";
+import useLamp from "./useLamp";
+import { poweroffLamp, updateLamp } from "@/lib/dmx/lamps";
+import { EFFECTS, findEffect, type EffectId } from "@/lib/dmx/effects";
 
 interface DMXLampProps {
     label: string;
     topic: string;
     type: LampType;
-}
-
-function parseColor(bytes: Uint8Array): RGB {
-    return {
-        r: bytes[0] ?? 0,
-        g: bytes[1] ?? 0,
-        b: bytes[2] ?? 0,
-    };
-}
-
-function parseWhite(bytes: Uint8Array): number {
-    return bytes[3] ?? 0;
-}
-
-function buildPayload(
-    type: LampType,
-    color: RGB,
-    white: number,
-    intensity = 255,
-): Uint8Array {
-    switch (type) {
-        case "rgb":
-            return new Uint8Array([color.r, color.g, color.b]);
-        case "rgbw":
-            return new Uint8Array([color.r, color.g, color.b, white]);
-        case "dmx4ch":
-            return new Uint8Array([color.r, color.g, color.b, intensity]);
-        case "dmx7ch":
-            return new Uint8Array([
-                color.r,
-                color.g,
-                color.b,
-                0,
-                0,
-                0,
-                intensity,
-            ]);
-    }
-}
-
-function buildPoweroff(type: LampType): Uint8Array {
-    switch (type) {
-        case "rgb":
-            return new Uint8Array([0, 0, 0]);
-        case "rgbw":
-        case "dmx4ch":
-            return new Uint8Array([0, 0, 0, 0]);
-        case "dmx7ch":
-            return new Uint8Array([0, 0, 0, 0, 0, 0, 0]);
-    }
 }
 
 interface LampEditorProps extends BaseDialogProps {
@@ -88,30 +39,37 @@ function LampEditor({
     const [color, setColor] = useState<RGB>(initialColor);
     const [white, setWhite] = useState(initialWhite);
     const [intensity, setIntensity] = useState(initialIntensity);
-    const { sendData } = useMQTTSend();
+
+    const { supports } = useLamp(topic, type);
+
+    const supportsWhite = supports("white");
+    const supportsAdvanced =
+        supports("intensity") || supports("zoom") || supports("effect");
 
     const send = useCallback(
         (c: RGB, w: number, i: number) => {
-            sendData(topic, buildPayload(type, c, w, i), true);
+            updateLamp(topic, type, {
+                rgb: c,
+                white: w,
+                intensity: i,
+                effect: null,
+            });
         },
-        [topic, type, sendData],
+        [topic, type],
     );
 
     const handleColorChange = useCallback(
         (c: RGB) => {
             setColor(c);
             const isBlack = c.r === 0 && c.g === 0 && c.b === 0;
-            if (isBlack && (type === "dmx7ch" || type === "dmx4ch")) {
+            if (isBlack) {
                 setIntensity(0);
-                send(c, white, 0);
-            } else if (type === "dmx7ch" || type === "dmx4ch") {
-                setIntensity(255);
-                send(c, white, 255);
             } else {
-                send(c, white, intensity);
+                setIntensity(255);
             }
+            send(c, white, isBlack ? 0 : 255);
         },
-        [white, intensity, type, send],
+        [white, send],
     );
 
     const handleWhiteChange = useCallback(
@@ -131,10 +89,10 @@ function LampEditor({
     );
 
     const handlePoweroff = useCallback(() => {
-        sendData(topic, buildPoweroff(type), true);
+        poweroffLamp(topic, type);
         setColor({ r: 0, g: 0, b: 0 });
         setWhite(0);
-    }, [topic, type, sendData]);
+    }, [topic, type]);
 
     return (
         <BaseDialog title={title} className="sm:max-w-lg">
@@ -142,19 +100,18 @@ function LampEditor({
                 <ColorPicker
                     color={color}
                     onChange={handleColorChange}
-                    showWhite={type === "rgbw"}
+                    showWhite={supportsWhite}
                     white={white}
                     onWhiteChange={
-                        type === "rgbw" ? handleWhiteChange : undefined
+                        supportsWhite ? handleWhiteChange : undefined
                     }
                 />
-                {(type === "dmx7ch" || type === "dmx4ch") && (
+                {supportsAdvanced && (
                     <AdvancedSection
                         type={type}
                         topic={topic}
                         intensity={intensity}
                         onIntensityChange={handleIntensityChange}
-                        sendData={sendData}
                     />
                 )}
                 <div className="flex gap-2">
@@ -177,43 +134,54 @@ function LampEditor({
     );
 }
 
-// Effect byte 5 values matching the DMX controller firmware
-const EFFECTS = [
-    { id: "fade", label: "Fade", paramLabel: "Speed", marker: 0x81 },
-    { id: "flash-less", label: "Flash--", paramLabel: "Speed", marker: 0xa1 },
-    { id: "flash", label: "Flash", paramLabel: "Speed", marker: 0xc1 },
-    { id: "sound", label: "Sound", paramLabel: "Sensitivity", marker: 0xe1 },
-] as const;
-
-type EffectId = (typeof EFFECTS)[number]["id"];
-
 function AdvancedSection({
     type,
     topic,
     intensity,
     onIntensityChange,
-    sendData,
 }: {
     type: LampType;
     topic: string;
     intensity: number;
     onIntensityChange: (i: number) => void;
-    sendData: (topic: string, data: Uint8Array, retained: boolean) => void;
 }) {
     const [open, setOpen] = useState(false);
     const [selected, setSelected] = useState<EffectId>("fade");
     const [param, setParam] = useState(128);
-    const has7ch = type === "dmx7ch";
+
+    const { supports, update, values } = useLamp(topic, type);
+
+    const supportsIntensity = supports("intensity");
+    const supportsEffects = supports("effect");
+    const supportsZoom = supports("zoom");
 
     const effect = EFFECTS.find((e) => e.id === selected)!;
 
     function applyEffect() {
-        sendData(
-            topic,
-            new Uint8Array([0, 0, 0, 0, param, effect.marker, 255]),
-            true,
-        );
+        update({
+            rgb: {
+                r: 0,
+                g: 0,
+                b: 0,
+            },
+            effect: {
+                marker: effect.marker,
+                param,
+            },
+            intensity: 255,
+        });
     }
+
+    const sectionLabelParts = [
+        supportsIntensity && "Intensity",
+        supportsZoom && "Zoom",
+        supportsEffects && "Effects",
+    ].filter(Boolean);
+
+    const sectionLabel =
+        sectionLabelParts.length > 1
+            ? `${sectionLabelParts.slice(0, -1).join(", ")} & ${sectionLabelParts.at(-1)}`
+            : sectionLabelParts[0];
 
     return (
         <div className="border rounded-lg overflow-hidden">
@@ -228,26 +196,45 @@ function AdvancedSection({
                         !open && "-rotate-90",
                     )}
                 />
-                {has7ch ? "Intensity & Effects" : "Intensity"}
+                {sectionLabel}
             </button>
             {open && (
                 <div className="px-3 pb-3 space-y-3">
-                    <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">
-                            Intensity: {intensity}
-                        </label>
-                        <input
-                            type="range"
-                            min={0}
-                            max={255}
-                            value={intensity}
-                            onChange={(e) =>
-                                onIntensityChange(Number(e.target.value))
-                            }
-                            className="w-full h-6 touch-none"
-                        />
-                    </div>
-                    {has7ch && (
+                    {supportsIntensity && (
+                        <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">
+                                Intensity: {intensity}
+                            </label>
+                            <input
+                                type="range"
+                                min={0}
+                                max={255}
+                                value={intensity}
+                                onChange={(e) =>
+                                    onIntensityChange(Number(e.target.value))
+                                }
+                                className="w-full h-6 touch-none"
+                            />
+                        </div>
+                    )}
+                    {supportsZoom && (
+                        <div className="space-y-1">
+                            <label className="text-xs text-muted-foreground">
+                                Zoom: {values.zoom}
+                            </label>
+                            <input
+                                type="range"
+                                min={0}
+                                max={255}
+                                value={values.zoom}
+                                onChange={(e) =>
+                                    update({ zoom: Number(e.target.value) })
+                                }
+                                className="w-full h-6 touch-none"
+                            />
+                        </div>
+                    )}
+                    {supportsEffects && (
                         <>
                             <div className="flex rounded-lg bg-muted p-0.5">
                                 {EFFECTS.map((e) => (
@@ -297,32 +284,22 @@ function AdvancedSection({
 }
 
 export default function DMXLamp({ label, topic, type }: DMXLampProps) {
-    const payload = useMQTTValue(topic);
-    const bytes = payload?.bytes ?? new Uint8Array(0);
-    const color = parseColor(bytes);
-    const white = parseWhite(bytes);
-    const intensity =
-        type === "dmx7ch" && bytes.length >= 7
-            ? bytes[6]
-            : type === "dmx4ch" && bytes.length >= 4
-              ? bytes[3]
-              : 255;
+    const { supports, values } = useLamp(topic, type);
+
+    const color = values.rgb ?? { r: 0, g: 0, b: 0 };
+    const white = values.white ?? 0;
+    const intensity = values.intensity ?? 255;
+    const effect = values.effect;
+
+    const supportsWhite = supports("white");
+
     const hex = rgbToHex(color);
     const isOff =
-        color.r === 0 &&
-        color.g === 0 &&
-        color.b === 0 &&
-        (type !== "rgbw" || white === 0);
+        color.r === 0 && color.g === 0 && color.b === 0 && white === 0;
 
-    // Detect active effect from byte 5 (7ch only)
-    let effectLabel: string | null = null;
-    if (type === "dmx7ch" && bytes.length >= 7 && bytes[5] !== 0) {
-        const b5 = bytes[5];
-        if (b5 >= 0x80 && b5 <= 0x9f) effectLabel = "fade";
-        else if (b5 >= 0xa0 && b5 <= 0xbf) effectLabel = "flash--";
-        else if (b5 >= 0xc0 && b5 <= 0xdf) effectLabel = "flash";
-        else if (b5 >= 0xe0) effectLabel = "sound";
-    }
+    const effectLabel = effect
+        ? findEffect(effect.marker)?.label.toLowerCase()
+        : undefined;
 
     function openEditor() {
         void showDialog(LampEditor, {
@@ -356,7 +333,7 @@ export default function DMXLamp({ label, topic, type }: DMXLampProps) {
                 }
             >
                 {effectLabel && (
-                    <span className="text-[10px] text-muted-foreground/50 animate-pulse [animation-duration:4s]">
+                    <span className="text-[10px] text-muted-foreground/50 animate-pulse animation-duration-[4s]">
                         {effectLabel}
                     </span>
                 )}
@@ -365,7 +342,7 @@ export default function DMXLamp({ label, topic, type }: DMXLampProps) {
                 <span className="text-xs font-medium leading-tight text-foreground text-center">
                     {label}
                 </span>
-                {type === "rgbw" && white > 0 && (
+                {supportsWhite && white > 0 && (
                     <span className="text-[10px] text-muted-foreground">
                         W: {white}
                     </span>

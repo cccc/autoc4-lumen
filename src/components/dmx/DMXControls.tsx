@@ -8,10 +8,11 @@ import {
     showDialog,
     useDialog,
 } from "@/lib/dialog";
-import { useMQTTSend } from "@/lib/mqtt";
-import { mqttStore } from "@/lib/mqtt/store";
 import { cn } from "@/lib/utils";
 import { DialogFooter } from "../ui/dialog";
+import { readLamp, updateLamp } from "@/lib/dmx/lamps";
+import { LAMP_TYPES, type LampParams } from "@/lib/dmx/lamp-types";
+import { EFFECTS, type EffectId } from "@/lib/dmx/effects";
 
 interface DMXControlsProps {
     room: string;
@@ -21,25 +22,24 @@ interface DMXControlsProps {
 
 function BrightnessControls({ room, only, except }: DMXControlsProps) {
     const lamps = useColorAppliances({ room, only, except });
-    const { sendData } = useMQTTSend();
 
     function applyBrightness(factor: number) {
-        const state = mqttStore.getState();
         for (const lamp of lamps) {
-            const payload = state.topics.get(lamp.topic);
-            if (!payload || payload.bytes.length < 3) continue;
-            const rgb = {
-                r: payload.bytes[0],
-                g: payload.bytes[1],
-                b: payload.bytes[2],
-            };
-            const adjusted = adjustBrightness(rgb, factor);
-            const bytes = new Uint8Array(payload.bytes.length);
-            bytes.set(payload.bytes);
-            bytes[0] = adjusted.r;
-            bytes[1] = adjusted.g;
-            bytes[2] = adjusted.b;
-            sendData(lamp.topic, bytes, true);
+            const lampType = LAMP_TYPES[lamp.type];
+
+            const supportsRGB = lampType.supports("rgb");
+            const supportsWhite = lampType.supports("white");
+            if (!supportsRGB && !supportsWhite) continue;
+
+            const values = readLamp(lamp.topic, lamp.type);
+            const patch: LampParams = {};
+            if (values.rgb) {
+                patch.rgb = adjustBrightness(values.rgb, factor);
+            }
+            if (values.white != null) {
+                patch.white = Math.round(Math.min(255, values.white * factor));
+            }
+            updateLamp(lamp.topic, lamp.type, patch);
         }
     }
 
@@ -80,33 +80,25 @@ function BrightnessControls({ room, only, except }: DMXControlsProps) {
     );
 }
 
-const ROOM_EFFECTS = [
-    { id: "fade", label: "Fade", paramLabel: "Speed", marker: 0x81 },
-    { id: "flash-less", label: "Flash--", paramLabel: "Speed", marker: 0xa1 },
-    { id: "flash", label: "Flash", paramLabel: "Speed", marker: 0xc1 },
-    { id: "sound", label: "Sound", paramLabel: "Sensitivity", marker: 0xe1 },
-] as const;
-
-type RoomEffectId = (typeof ROOM_EFFECTS)[number]["id"];
-
 function RoomEffectDialog({ room, only, except }: DMXControlsProps) {
-    const [selected, setSelected] = useState<RoomEffectId>("fade");
+    const [selected, setSelected] = useState<EffectId>("fade");
     const [param, setParam] = useState(128);
     const lamps = useColorAppliances({ room, only, except });
-    const { sendData } = useMQTTSend();
     const { remove } = useDialog();
 
-    const effect = ROOM_EFFECTS.find((e) => e.id === selected)!;
+    const effect = EFFECTS.find((e) => e.id === selected)!;
 
     function apply() {
         for (const lamp of lamps) {
-            if (lamp.type === "dmx7ch") {
-                sendData(
-                    lamp.topic,
-                    new Uint8Array([0, 0, 0, 0, param, effect.marker, 255]),
-                    true,
-                );
-            }
+            if (!LAMP_TYPES[lamp.type].supports("effect")) continue;
+            updateLamp(lamp.topic, lamp.type, {
+                // Do we wanna reset the color or is the effect kinda cool
+                effect: {
+                    marker: effect.marker,
+                    param,
+                },
+                intensity: 255,
+            });
         }
         remove();
     }
@@ -115,7 +107,7 @@ function RoomEffectDialog({ room, only, except }: DMXControlsProps) {
         <BaseDialog title="Effects" className="sm:max-w-lg">
             <div className="space-y-4">
                 <div className="flex rounded-lg bg-muted p-0.5">
-                    {ROOM_EFFECTS.map((e) => (
+                    {EFFECTS.map((e) => (
                         <button
                             key={e.id}
                             type="button"
@@ -158,38 +150,20 @@ function RoomEffectDialog({ room, only, except }: DMXControlsProps) {
 function RandomDialog({ room, only, except }: DMXControlsProps) {
     const [brightness, setBrightness] = useState(128);
     const lamps = useColorAppliances({ room, only, except });
-    const { sendData } = useMQTTSend();
     const { remove } = useDialog();
 
     function apply() {
         for (const lamp of lamps) {
             const c = randomColor(brightness / 255);
-            switch (lamp.type) {
-                case "dmx7ch":
-                    sendData(
-                        lamp.topic,
-                        new Uint8Array([c.r, c.g, c.b, 0, 0, 0, 255]),
-                        true,
-                    );
-                    break;
-                case "dmx4ch":
-                    sendData(
-                        lamp.topic,
-                        new Uint8Array([c.r, c.g, c.b, 255]),
-                        true,
-                    );
-                    break;
-                case "rgbw":
-                    sendData(
-                        lamp.topic,
-                        new Uint8Array([c.r, c.g, c.b, 0]),
-                        true,
-                    );
-                    break;
-                case "rgb":
-                    sendData(lamp.topic, new Uint8Array([c.r, c.g, c.b]), true);
-                    break;
-            }
+
+            // Do we wanna reset all white lamps too?
+            if (!LAMP_TYPES[lamp.type].supports("rgb")) continue;
+            updateLamp(lamp.topic, lamp.type, {
+                rgb: c,
+                white: 0,
+                effect: null,
+                intensity: 255,
+            });
         }
         remove();
     }
@@ -221,7 +195,7 @@ function RandomDialog({ room, only, except }: DMXControlsProps) {
 
 function EffectsControls({ room, only, except }: DMXControlsProps) {
     const lamps = useColorAppliances({ room, only, except });
-    const has7ch = lamps.some((l) => l.type === "dmx7ch");
+    const hasEffects = lamps.some((l) => LAMP_TYPES[l.type].supports("effect"));
 
     return (
         <div className="space-y-1">
@@ -240,7 +214,7 @@ function EffectsControls({ room, only, except }: DMXControlsProps) {
                 >
                     Random
                 </Button>
-                {has7ch && (
+                {hasEffects && (
                     <Button
                         size="lg"
                         variant="outline"

@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import type { ColorAppliance } from "@/lib/appliances";
 import { useColorAppliances } from "@/lib/appliances";
 import type { RGB } from "@/lib/color";
-import { hexToRgb, rgbToHex } from "@/lib/color";
-import { useMQTTSend } from "@/lib/mqtt";
-import { sendByte, sendData } from "@/lib/mqtt/client";
+import { hexToRgb, isBlack, rgbToHex } from "@/lib/color";
+import { sendByte } from "@/lib/mqtt/client";
 import { mqttStore } from "@/lib/mqtt/store";
 import ColorPicker from "./ColorPicker";
 import {
@@ -16,20 +15,8 @@ import {
     type BaseDialogProps,
 } from "@/lib/dialog";
 import { DialogFooter } from "../ui/dialog";
-
-function buildMasterPayload(type: ColorAppliance["type"], c: RGB): Uint8Array {
-    const isBlack = c.r === 0 && c.g === 0 && c.b === 0;
-    switch (type) {
-        case "rgb":
-            return new Uint8Array([c.r, c.g, c.b]);
-        case "rgbw":
-            return new Uint8Array([c.r, c.g, c.b, 0]);
-        case "dmx4ch":
-            return new Uint8Array([c.r, c.g, c.b, isBlack ? 0 : 255]);
-        case "dmx7ch":
-            return new Uint8Array([c.r, c.g, c.b, 0, 0, 0, isBlack ? 0 : 255]);
-    }
-}
+import { LAMP_TYPES } from "@/lib/dmx/lamp-types";
+import { poweroffLamp, updateLamp } from "@/lib/dmx/lamps";
 
 function useCommonColorHex(
     room: string,
@@ -43,15 +30,26 @@ function useCommonColorHex(
 
         for (const lamp of lamps) {
             const payload = state.topics.get(lamp.topic);
-            if (!payload || payload.bytes.length < 3) continue;
-            const r = payload.bytes[0];
-            const g = payload.bytes[1];
-            const b = payload.bytes[2];
-            if (common === null) {
-                common = { r, g, b };
-            } else if (r !== common.r || g !== common.g || b !== common.b) {
-                allSame = false;
-                break;
+            if (!payload) continue;
+
+            const lampType = LAMP_TYPES[lamp.type];
+
+            if (!lampType.supports("rgb")) continue;
+
+            const values = lampType.decode(payload.bytes);
+            const rgb = values.rgb!;
+
+            if (!common) {
+                common = rgb;
+            } else {
+                if (
+                    common.r !== rgb.r ||
+                    common.g !== rgb.g ||
+                    common.b !== rgb.b
+                ) {
+                    allSame = false;
+                    break;
+                }
             }
         }
 
@@ -66,16 +64,20 @@ interface MasterEditorProps extends BaseDialogProps {
 }
 function MasterEditor({ title, lamps, initialColor }: MasterEditorProps) {
     const [color, setColor] = useState<RGB>(initialColor);
-    const { sendData: send } = useMQTTSend();
 
     const handleChange = useCallback(
         (c: RGB) => {
             setColor(c);
             for (const lamp of lamps) {
-                send(lamp.topic, buildMasterPayload(lamp.type, c), true);
+                updateLamp(lamp.topic, lamp.type, {
+                    rgb: c,
+                    white: 0,
+                    intensity: isBlack(c) ? 0 : 255,
+                    effect: null,
+                });
             }
         },
-        [lamps, send],
+        [lamps],
     );
 
     return (
@@ -107,9 +109,8 @@ export default function DMXMaster({
     const showColor = commonHex && !isOff;
 
     function powerOffAll() {
-        const black = { r: 0, g: 0, b: 0 };
         for (const lamp of lamps) {
-            sendData(lamp.topic, buildMasterPayload(lamp.type, black), true);
+            poweroffLamp(lamp.topic, lamp.type);
         }
         if (relayTopic) {
             sendByte(relayTopic, 0, { retained: true });

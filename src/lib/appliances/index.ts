@@ -1,15 +1,10 @@
 import { useMemo } from "react";
 import { appliances } from "@/config/appliances";
-import type { RGB } from "@/lib/color";
+import { isBlack, type RGB } from "@/lib/color";
 import type { Appliance, ColorAppliance } from "./types";
+import { LAMP_TYPES } from "../dmx/lamp-types";
 
 export * from "./types";
-
-/** Parse the first 3 bytes as RGB. Works for all color lamp types. */
-export function parseColorFromPayload(bytes: Uint8Array): RGB | null {
-    if (bytes.length < 3) return null;
-    return { r: bytes[0], g: bytes[1], b: bytes[2] };
-}
 
 /** Returns all topics registered for an appliance (1 for most, 2 for paired, 0 for topicless). */
 export function getApplianceTopics(appliance: Appliance): string[] {
@@ -33,7 +28,9 @@ export function getApplianceTopics(appliance: Appliance): string[] {
 export function isColorAppliance(
     appliance: Appliance,
 ): appliance is ColorAppliance {
-    return ["dmx7ch", "dmx4ch", "rgb", "rgbw"].includes(appliance.type);
+    return ["dmx7ch", "dmx4ch", "rgb", "rgbw", "zrgbw"].includes(
+        appliance.type,
+    );
 }
 
 // ─── Hook ───────────────────────────────────────────────────────
@@ -66,14 +63,6 @@ export function useColorAppliances(opts: UseAppliancesOpts): ColorAppliance[] {
     return useMemo(() => all.filter(isColorAppliance), [all]);
 }
 
-/** Get only appliances of a specific type that supports a certain effect. */
-export function hasType(
-    lamps: ColorAppliance[],
-    type: ColorAppliance["type"],
-): boolean {
-    return lamps.some((l) => l.type === type);
-}
-
 /** Look up an appliance by topic. */
 export function findApplianceByTopic(topic: string): Appliance | undefined {
     return appliances.find((a) => getApplianceTopics(a).includes(topic));
@@ -102,12 +91,13 @@ export function extractPresetColors(
         const appliance = findApplianceByTopic(topic);
         if (!appliance || !isColorAppliance(appliance)) continue;
 
-        const bytes = catalogPayloadToBytes(payload);
-        const color = parseColorFromPayload(bytes);
-        if (!color) continue;
-        if (color.r === 0 && color.g === 0 && color.b === 0) continue;
+        const lampType = LAMP_TYPES[appliance.type];
 
-        colors.push({ color, label: appliance.label });
+        if (!lampType.supports("rgb")) continue;
+        const values = lampType.decode(catalogPayloadToBytes(payload));
+
+        if (values.rgb && !isBlack(values.rgb))
+            colors.push({ color: values.rgb, label: appliance.label });
     }
 
     return colors;

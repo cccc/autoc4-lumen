@@ -62,7 +62,7 @@ export default defineAppliances("plenar", [
         tags: ["tab/rgb"],
     },
     {
-        type: "dmx7ch",
+        type: "zrgbw",
         topic: "dmx/plenar/vorne3",
         label: "Vorne 3",
         tags: ["tab/rgb"],
