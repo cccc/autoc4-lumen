@@ -1,5 +1,5 @@
 import type { PresetColor } from "@/lib/appliances";
-import { rgbToHex } from "@/lib/color";
+import { RGB } from "@/lib/color";
 import FloppyIcon from "./FloppyIcon";
 
 interface PresetButtonProps {
@@ -31,7 +31,7 @@ export default function PresetButton({
                                 key={c.label}
                                 className="h-3.5 w-5 rounded-[3px] border border-white/30"
                                 style={{
-                                    backgroundColor: rgbToHex(c.color),
+                                    backgroundColor: RGB.toHex(c.color),
                                 }}
                                 title={c.label}
                             />

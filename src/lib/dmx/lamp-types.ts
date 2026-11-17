@@ -4,7 +4,7 @@ import {
     type Capability,
     type CapabilityValues,
 } from "./capabilities";
-import { isBlack } from "../color";
+import { RGB } from "../color";
 
 export type LampParams = Partial<CapabilityValues>;
 
@@ -76,10 +76,10 @@ function createLampType<C extends Capability>(
             // color programs that ignore RGB. Effects that animate the set
             // color (see effects.ts) would have to keep it.
             if (patch.effect) {
-                next.rgb = { r: 0, g: 0, b: 0 };
+                next.rgb = RGB.BLACK;
             } else if (
                 patch.rgb &&
-                !isBlack(patch.rgb) &&
+                !RGB.isBlack(patch.rgb) &&
                 patch.effect === undefined
             ) {
                 next.effect = null;
@@ -93,7 +93,7 @@ function createLampType<C extends Capability>(
                 if (patch.effect) {
                     next.intensity = 255;
                 } else if (patch.rgb && !next.effect) {
-                    next.intensity = isBlack(patch.rgb) ? 0 : 255;
+                    next.intensity = RGB.isBlack(patch.rgb) ? 0 : 255;
                 }
             }
 

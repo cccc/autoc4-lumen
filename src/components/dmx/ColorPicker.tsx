@@ -1,8 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { HSV, RGB } from "@/lib/color";
-import { hsvToRgb, rgbToHex, rgbToHsv } from "@/lib/color";
+import { HSV, RGB } from "@/lib/color";
 import { useMQTTJSON } from "@/lib/mqtt";
 
 type PickerMode = "rect" | "wheel";
@@ -62,7 +61,7 @@ function SaturationValueCanvas({
         [handlePointer],
     );
 
-    const pureColor = rgbToHex(hsvToRgb({ h: hue, s: 1, v: 1 }));
+    const pureColor = RGB.toHex(RGB.fromHSV({ h: hue, s: 1, v: 1 }));
 
     return (
         <div
@@ -79,8 +78,8 @@ function SaturationValueCanvas({
                 style={{
                     left: `${saturation * 100}%`,
                     top: `${(1 - value) * 100}%`,
-                    background: rgbToHex(
-                        hsvToRgb({ h: hue, s: saturation, v: value }),
+                    background: RGB.toHex(
+                        RGB.fromHSV({ h: hue, s: saturation, v: value }),
                     ),
                 }}
             />
@@ -140,7 +139,7 @@ function HueSlider({
                 className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 size-6 rounded-full border-2 border-white shadow-md pointer-events-none"
                 style={{
                     left: `${hue * 100}%`,
-                    background: rgbToHex(hsvToRgb({ h: hue, s: 1, v: 1 })),
+                    background: RGB.toHex(RGB.fromHSV({ h: hue, s: 1, v: 1 })),
                 }}
             />
         </div>
@@ -217,8 +216,8 @@ function HueSaturationWheel({
                 style={{
                     left: `${indicatorX}%`,
                     top: `${indicatorY}%`,
-                    background: rgbToHex(
-                        hsvToRgb({ h: hue, s: saturation, v: value }),
+                    background: RGB.toHex(
+                        RGB.fromHSV({ h: hue, s: saturation, v: value }),
                     ),
                 }}
             />
@@ -267,7 +266,7 @@ function ValueSlider({
         [handlePointer],
     );
 
-    const fullColor = rgbToHex(hsvToRgb({ h: hue, s: saturation, v: 1 }));
+    const fullColor = RGB.toHex(RGB.fromHSV({ h: hue, s: saturation, v: 1 }));
 
     return (
         <div
@@ -283,8 +282,8 @@ function ValueSlider({
                 className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 size-6 rounded-full border-2 border-white shadow-md pointer-events-none"
                 style={{
                     left: `${value * 100}%`,
-                    background: rgbToHex(
-                        hsvToRgb({ h: hue, s: saturation, v: value }),
+                    background: RGB.toHex(
+                        RGB.fromHSV({ h: hue, s: saturation, v: value }),
                     ),
                 }}
             />
@@ -382,7 +381,7 @@ function Swatches({ onSelect }: { onSelect: (color: RGB) => void }) {
                         type="button"
                         className="aspect-square w-full rounded-md border border-border active:scale-90 transition-transform"
                         style={{
-                            backgroundColor: rgbToHex(swatch.color),
+                            backgroundColor: RGB.toHex(swatch.color),
                         }}
                         title={swatch.label}
                         onClick={() => onSelect(swatch.color)}
@@ -427,7 +426,7 @@ export default function ColorPicker({
 }: ColorPickerProps) {
     const [mode, setMode] = useState<PickerMode>("wheel");
     const [sliderMode, setSliderMode] = useState<SliderMode>("rgb");
-    const hsv = rgbToHsv(color);
+    const hsv = HSV.fromRGB(color);
 
     const handleHsvChange = useCallback(
         (partial: Partial<HSV>) => {
@@ -441,7 +440,7 @@ export default function ColorPicker({
                 if (partial.s === undefined && partial.h !== undefined)
                     next.s = 1;
             }
-            onChange(hsvToRgb(next));
+            onChange(RGB.fromHSV(next));
         },
         [hsv, onChange],
     );
@@ -544,21 +543,23 @@ export default function ColorPicker({
                         label="H"
                         value={Math.round(hsv.h * 360)}
                         max={360}
-                        color={rgbToHex(hsvToRgb({ h: hsv.h, s: 1, v: 1 }))}
+                        color={RGB.toHex(RGB.fromHSV({ h: hsv.h, s: 1, v: 1 }))}
                         onChange={(h) => handleHsvChange({ h: h / 360 })}
                     />
                     <ChannelSlider
                         label="S"
                         value={Math.round(hsv.s * 100)}
                         max={100}
-                        color={rgbToHex(hsvToRgb({ h: hsv.h, s: hsv.s, v: 1 }))}
+                        color={RGB.toHex(
+                            RGB.fromHSV({ h: hsv.h, s: hsv.s, v: 1 }),
+                        )}
                         onChange={(s) => handleHsvChange({ s: s / 100 })}
                     />
                     <ChannelSlider
                         label="V"
                         value={Math.round(hsv.v * 100)}
                         max={100}
-                        color={rgbToHex(color)}
+                        color={RGB.toHex(color)}
                         onChange={(v) => handleHsvChange({ v: v / 100 })}
                     />
                 </>

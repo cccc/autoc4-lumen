@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import type { RGB } from "@/lib/color";
-import { rgbToHex } from "@/lib/color";
+import { RGB } from "@/lib/color";
 import { cn } from "@/lib/utils";
 import ColorPicker from "./ColorPicker";
 import {
@@ -90,7 +89,7 @@ function LampEditor({
 
     const handlePoweroff = useCallback(() => {
         poweroffLamp(topic, type);
-        setColor({ r: 0, g: 0, b: 0 });
+        setColor(RGB.BLACK);
         setWhite(0);
     }, [topic, type]);
 
@@ -159,11 +158,7 @@ function AdvancedSection({
 
     function applyEffect() {
         update({
-            rgb: {
-                r: 0,
-                g: 0,
-                b: 0,
-            },
+            rgb: RGB.BLACK,
             effect: {
                 marker: effect.marker,
                 param,
@@ -286,14 +281,14 @@ function AdvancedSection({
 export default function DMXLamp({ label, topic, type }: DMXLampProps) {
     const { supports, values } = useLamp(topic, type);
 
-    const color = values.rgb ?? { r: 0, g: 0, b: 0 };
+    const color = values.rgb ?? RGB.BLACK;
     const white = values.white ?? 0;
     const intensity = values.intensity ?? 255;
     const effect = values.effect;
 
     const supportsWhite = supports("white");
 
-    const hex = rgbToHex(color);
+    const hex = RGB.toHex(color);
     const isOff =
         color.r === 0 && color.g === 0 && color.b === 0 && white === 0;
 

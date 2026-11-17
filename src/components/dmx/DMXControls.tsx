@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useColorAppliances } from "@/lib/appliances";
-import { adjustBrightness, randomColor } from "@/lib/color";
+import { RGB } from "@/lib/color";
 import {
     BaseDialog,
     DialogCloseButton,
@@ -34,7 +34,7 @@ function BrightnessControls({ room, only, except }: DMXControlsProps) {
             const values = readLamp(lamp.topic, lamp.type);
             const patch: LampParams = {};
             if (values.rgb) {
-                patch.rgb = adjustBrightness(values.rgb, factor);
+                patch.rgb = RGB.adjustBrightness(values.rgb, factor);
             }
             if (values.white != null) {
                 patch.white = Math.round(Math.min(255, values.white * factor));
@@ -154,7 +154,7 @@ function RandomDialog({ room, only, except }: DMXControlsProps) {
 
     function apply() {
         for (const lamp of lamps) {
-            const c = randomColor(brightness / 255);
+            const c = RGB.random(brightness / 255);
 
             // Do we wanna reset all white lamps too?
             if (!LAMP_TYPES[lamp.type].supports("rgb")) continue;

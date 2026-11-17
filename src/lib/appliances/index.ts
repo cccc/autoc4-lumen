@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { appliances } from "@/config/appliances";
-import { isBlack, type RGB } from "@/lib/color";
+import { RGB } from "@/lib/color";
 import type { Appliance, ColorAppliance } from "./types";
 import { LAMP_TYPES } from "../dmx/lamp-types";
 
@@ -96,7 +96,7 @@ export function extractPresetColors(
         if (!lampType.supports("rgb")) continue;
         const values = lampType.decode(catalogPayloadToBytes(payload));
 
-        if (values.rgb && !isBlack(values.rgb))
+        if (values.rgb && !RGB.isBlack(values.rgb))
             colors.push({ color: values.rgb, label: appliance.label });
     }
 

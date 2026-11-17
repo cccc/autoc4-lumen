@@ -3,8 +3,7 @@ import { useStore } from "zustand";
 import { Button } from "@/components/ui/button";
 import type { ColorAppliance } from "@/lib/appliances";
 import { useColorAppliances } from "@/lib/appliances";
-import type { RGB } from "@/lib/color";
-import { hexToRgb, isBlack, rgbToHex } from "@/lib/color";
+import { RGB } from "@/lib/color";
 import { sendByte } from "@/lib/mqtt/client";
 import { mqttStore } from "@/lib/mqtt/store";
 import ColorPicker from "./ColorPicker";
@@ -42,11 +41,7 @@ function useCommonColorHex(
             if (!common) {
                 common = rgb;
             } else {
-                if (
-                    common.r !== rgb.r ||
-                    common.g !== rgb.g ||
-                    common.b !== rgb.b
-                ) {
+                if (!RGB.equals(common, rgb)) {
                     allSame = false;
                     break;
                 }
@@ -54,7 +49,7 @@ function useCommonColorHex(
         }
 
         if (!allSame || !common) return null;
-        return rgbToHex(common);
+        return RGB.toHex(common);
     });
 }
 
@@ -72,7 +67,7 @@ function MasterEditor({ title, lamps, initialColor }: MasterEditorProps) {
                 updateLamp(lamp.topic, lamp.type, {
                     rgb: c,
                     white: 0,
-                    intensity: isBlack(c) ? 0 : 255,
+                    intensity: RGB.isBlack(c) ? 0 : 255,
                     effect: null,
                 });
             }
@@ -121,9 +116,7 @@ export default function DMXMaster({
         void showDialog(MasterEditor, {
             title: "Master",
             lamps,
-            initialColor: commonHex
-                ? hexToRgb(commonHex)
-                : { r: 0, g: 0, b: 0 },
+            initialColor: commonHex ? RGB.fromHex(commonHex) : RGB.BLACK,
         });
     }
 

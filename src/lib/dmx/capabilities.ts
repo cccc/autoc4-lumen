@@ -1,4 +1,4 @@
-import type { RGB } from "../color";
+import { RGB } from "../color";
 import { EFFECT_MARKER_MIN } from "./effects";
 
 type EffectValue = {
@@ -44,7 +44,7 @@ type CapabilityDefinitions = {
 export const CAPABILITIES: CapabilityDefinitions = {
     rgb: {
         label: "RGB",
-        off: { r: 0, g: 0, b: 0 },
+        off: RGB.BLACK,
         codec: {
             expectedLength: 3,
             encode: (value: RGB) => new Uint8Array([value.r, value.g, value.b]),
@@ -84,7 +84,7 @@ export const CAPABILITIES: CapabilityDefinitions = {
     },
 };
 export const OFF_CAPABILITY_VALUES = {
-    rgb: { r: 0, g: 0, b: 0 },
+    rgb: RGB.BLACK,
     white: 0,
     intensity: 0,
     effect: null,
