@@ -88,7 +88,7 @@ export default defineAppliances("plenar", [
         tags: ["tab/rgb"],
     },
     {
-        type: "dmx7ch",
+        type: "zrgbw",
         topic: "dmx/plenar/hinten3",
         label: "Hinten 3",
         tags: ["tab/rgb"],

@@ -45,7 +45,7 @@ export default defineAppliances("fnord", [
         tags: ["tab/rgb"],
     },
     {
-        type: "dmx4ch",
+        type: "zrgbw",
         topic: "dmx/fnord/fairyfenster",
         label: "Fairy Fenster",
         tags: ["tab/rgb"],

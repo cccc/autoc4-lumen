@@ -99,7 +99,7 @@ export default defineAppliances("wohnzimmer", [
         tags: ["tab/rgb"],
     },
     {
-        type: "dmx7ch",
+        type: "zrgbw",
         topic: "dmx/wohnzimmer/baellebad",
         label: "Bällebad",
         tags: ["tab/rgb"],
