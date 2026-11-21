@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { NumberSlider } from "@/components/ui/number-slider";
 import { useColorAppliances } from "@/lib/appliances";
 import { RGB } from "@/lib/color";
 import {
@@ -127,13 +128,11 @@ function RoomEffectDialog({ room, only, except }: DMXControlsProps) {
                     <label className="text-sm">
                         {effect.paramLabel}: {param}
                     </label>
-                    <input
-                        type="range"
+                    <NumberSlider
                         min={0}
                         max={255}
                         value={param}
-                        onChange={(e) => setParam(Number(e.target.value))}
-                        className="w-full h-8 touch-none"
+                        onChange={setParam}
                     />
                 </div>
             </div>
@@ -173,13 +172,11 @@ function RandomDialog({ room, only, except }: DMXControlsProps) {
             <div className="space-y-4">
                 <div className="space-y-2">
                     <label className="text-sm">Brightness: {brightness}</label>
-                    <input
-                        type="range"
+                    <NumberSlider
                         min={0}
                         max={255}
                         value={brightness}
-                        onChange={(e) => setBrightness(Number(e.target.value))}
-                        className="w-full h-8 touch-none"
+                        onChange={setBrightness}
                     />
                 </div>
                 <div className="flex gap-2">

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { RGB } from "@/lib/color";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,7 @@ import {
 } from "@/lib/dialog";
 import { type LampType } from "@/lib/dmx/lamp-types";
 import useLamp from "./useLamp";
-import { poweroffLamp, updateLamp } from "@/lib/dmx/lamps";
+import { NumberSlider } from "@/components/ui/number-slider";
 import { EFFECTS, findEffect, type EffectId } from "@/lib/dmx/effects";
 
 interface DMXLampProps {
@@ -23,101 +23,43 @@ interface DMXLampProps {
 interface LampEditorProps extends BaseDialogProps {
     topic: string;
     type: LampType;
-    initialColor: RGB;
-    initialWhite: number;
-    initialIntensity: number;
 }
-function LampEditor({
-    topic,
-    type,
-    initialColor,
-    initialWhite,
-    initialIntensity,
-    title,
-}: LampEditorProps) {
-    const [color, setColor] = useState<RGB>(initialColor);
-    const [white, setWhite] = useState(initialWhite);
-    const [intensity, setIntensity] = useState(initialIntensity);
+function LampEditor({ topic, type, title }: LampEditorProps) {
+    const lamp = useLamp(topic, type);
+    const { supports, update, commit, values, poweroff } = lamp;
 
-    const { supports } = useLamp(topic, type);
+    const { rgb, white } = values;
 
     const supportsWhite = supports("white");
     const supportsAdvanced =
         supports("intensity") || supports("zoom") || supports("effect");
 
-    const send = useCallback(
-        (c: RGB, w: number, i: number) => {
-            updateLamp(topic, type, {
-                rgb: c,
-                white: w,
-                intensity: i,
-                effect: null,
-            });
-        },
-        [topic, type],
-    );
-
-    const handleColorChange = useCallback(
-        (c: RGB) => {
-            setColor(c);
-            const isBlack = c.r === 0 && c.g === 0 && c.b === 0;
-            if (isBlack) {
-                setIntensity(0);
-            } else {
-                setIntensity(255);
-            }
-            send(c, white, isBlack ? 0 : 255);
-        },
-        [white, send],
-    );
-
-    const handleWhiteChange = useCallback(
-        (w: number) => {
-            setWhite(w);
-            send(color, w, intensity);
-        },
-        [color, intensity, send],
-    );
-
-    const handleIntensityChange = useCallback(
-        (i: number) => {
-            setIntensity(i);
-            send(color, white, i);
-        },
-        [color, white, send],
-    );
-
-    const handlePoweroff = useCallback(() => {
-        poweroffLamp(topic, type);
-        setColor(RGB.BLACK);
-        setWhite(0);
-    }, [topic, type]);
-
     return (
         <BaseDialog title={title} className="sm:max-w-lg">
             <div className="space-y-3">
                 <ColorPicker
-                    color={color}
-                    onChange={handleColorChange}
+                    color={rgb ?? RGB.BLACK}
+                    onChange={(c) =>
+                        update({
+                            rgb: c,
+                        })
+                    }
                     showWhite={supportsWhite}
                     white={white}
-                    onWhiteChange={
-                        supportsWhite ? handleWhiteChange : undefined
+                    onWhiteChange={(w) =>
+                        update({
+                            white: w,
+                        })
                     }
+                    onCommit={(c) => commit({ rgb: c })}
+                    onWhiteCommit={(w) => commit({ white: w })}
                 />
-                {supportsAdvanced && (
-                    <AdvancedSection
-                        type={type}
-                        topic={topic}
-                        intensity={intensity}
-                        onIntensityChange={handleIntensityChange}
-                    />
-                )}
+                {supportsAdvanced && <AdvancedSection lamp={lamp} />}
                 <div className="flex gap-2">
                     <button
                         type="button"
                         className="px-4 py-2 rounded-lg text-sm bg-off text-white hover:bg-off-hover active:scale-95"
-                        onClick={handlePoweroff}
+                        onClick={poweroff}
                     >
                         Off
                     </button>
@@ -133,37 +75,27 @@ function LampEditor({
     );
 }
 
-function AdvancedSection({
-    type,
-    topic,
-    intensity,
-    onIntensityChange,
-}: {
-    type: LampType;
-    topic: string;
-    intensity: number;
-    onIntensityChange: (i: number) => void;
-}) {
+function AdvancedSection({ lamp }: { lamp: ReturnType<typeof useLamp> }) {
     const [open, setOpen] = useState(false);
     const [selected, setSelected] = useState<EffectId>("fade");
     const [param, setParam] = useState(128);
 
-    const { supports, update, values } = useLamp(topic, type);
+    const { supports, update, commit, values } = lamp;
+
+    const { intensity, zoom } = values;
 
     const supportsIntensity = supports("intensity");
     const supportsEffects = supports("effect");
     const supportsZoom = supports("zoom");
 
-    const effect = EFFECTS.find((e) => e.id === selected)!;
+    const selectedEffect = EFFECTS.find((e) => e.id === selected)!;
 
     function applyEffect() {
-        update({
-            rgb: RGB.BLACK,
+        commit({
             effect: {
-                marker: effect.marker,
+                marker: selectedEffect.marker,
                 param,
             },
-            intensity: 255,
         });
     }
 
@@ -200,32 +132,26 @@ function AdvancedSection({
                             <label className="text-xs text-muted-foreground">
                                 Intensity: {intensity}
                             </label>
-                            <input
-                                type="range"
+                            <NumberSlider
                                 min={0}
                                 max={255}
-                                value={intensity}
-                                onChange={(e) =>
-                                    onIntensityChange(Number(e.target.value))
-                                }
-                                className="w-full h-6 touch-none"
+                                value={intensity ?? 0}
+                                onChange={(i) => update({ intensity: i })}
+                                onCommit={(i) => commit({ intensity: i })}
                             />
                         </div>
                     )}
                     {supportsZoom && (
                         <div className="space-y-1">
                             <label className="text-xs text-muted-foreground">
-                                Zoom: {values.zoom}
+                                Zoom: {zoom}
                             </label>
-                            <input
-                                type="range"
+                            <NumberSlider
                                 min={0}
                                 max={255}
-                                value={values.zoom}
-                                onChange={(e) =>
-                                    update({ zoom: Number(e.target.value) })
-                                }
-                                className="w-full h-6 touch-none"
+                                value={zoom ?? 0}
+                                onChange={(z) => update({ zoom: z })}
+                                onCommit={(z) => commit({ zoom: z })}
                             />
                         </div>
                     )}
@@ -250,17 +176,13 @@ function AdvancedSection({
                             </div>
                             <div className="space-y-1">
                                 <label className="text-xs text-muted-foreground">
-                                    {effect.paramLabel}: {param}
+                                    {selectedEffect.paramLabel}: {param}
                                 </label>
-                                <input
-                                    type="range"
+                                <NumberSlider
                                     min={0}
                                     max={255}
                                     value={param}
-                                    onChange={(e) =>
-                                        setParam(Number(e.target.value))
-                                    }
-                                    className="w-full h-6 touch-none"
+                                    onChange={setParam}
                                 />
                             </div>
                             <button
@@ -268,7 +190,7 @@ function AdvancedSection({
                                 className="w-full px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/80 active:scale-[0.98]"
                                 onClick={applyEffect}
                             >
-                                Apply {effect.label}
+                                Apply {selectedEffect.label}
                             </button>
                         </>
                     )}

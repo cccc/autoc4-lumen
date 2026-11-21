@@ -1,17 +1,32 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { Slider } from "@base-ui/react/slider";
+import { NumberSlider } from "@/components/ui/number-slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { HSV, RGB } from "@/lib/color";
 import { useMQTTJSON } from "@/lib/mqtt";
 
 type PickerMode = "rect" | "wheel";
 
+/** How the HSV controls report: each sends only the components it sets. */
+interface HsvHandlers {
+    onChange: (hsv: Partial<HSV>) => void;
+    onCommit: (hsv: Partial<HSV>) => void;
+}
+
 interface ColorPickerProps {
     color: RGB;
-    onChange: (color: RGB) => void;
+    /** Called continuously while a control is being dragged. */
+    onChange?: (color: RGB) => void;
+    /**
+     * Called with the final color when a drag ends. A swatch click is final
+     * right away, so it goes here, or to `onChange` if this isn't given.
+     */
+    onCommit?: (color: RGB) => void;
     showWhite?: boolean;
     white?: number;
     onWhiteChange?: (white: number) => void;
+    onWhiteCommit?: (white: number) => void;
 }
 
 function SaturationValueCanvas({
@@ -19,18 +34,17 @@ function SaturationValueCanvas({
     saturation,
     value,
     onChange,
+    onCommit,
 }: {
     hue: number;
     saturation: number;
     value: number;
-    onChange: (s: number, v: number) => void;
-}) {
+} & HsvHandlers) {
     const canvasRef = useRef<HTMLDivElement>(null);
-
-    const handlePointer = useCallback(
+    const drag = useDrag(
         (clientX: number, clientY: number) => {
             const rect = canvasRef.current?.getBoundingClientRect();
-            if (!rect) return;
+            if (!rect) return null;
             const s = Math.min(
                 1,
                 Math.max(0, (clientX - rect.left) / rect.width),
@@ -39,26 +53,10 @@ function SaturationValueCanvas({
                 1,
                 Math.max(0, 1 - (clientY - rect.top) / rect.height),
             );
-            onChange(s, v);
+            return { s, v };
         },
-        [onChange],
-    );
-
-    const handlePointerDown = useCallback(
-        (e: React.PointerEvent) => {
-            e.preventDefault();
-            (e.target as HTMLElement).setPointerCapture(e.pointerId);
-            handlePointer(e.clientX, e.clientY);
-        },
-        [handlePointer],
-    );
-
-    const handlePointerMove = useCallback(
-        (e: React.PointerEvent) => {
-            if (e.buttons === 0) return;
-            handlePointer(e.clientX, e.clientY);
-        },
-        [handlePointer],
+        onChange,
+        onCommit,
     );
 
     const pureColor = RGB.toHex(RGB.fromHSV({ h: hue, s: 1, v: 1 }));
@@ -70,8 +68,7 @@ function SaturationValueCanvas({
             style={{
                 background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, ${pureColor})`,
             }}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
+            {...drag}
         >
             <div
                 className="absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md pointer-events-none"
@@ -87,62 +84,16 @@ function SaturationValueCanvas({
     );
 }
 
-function HueSlider({
-    hue,
-    onChange,
-}: {
-    hue: number;
-    onChange: (h: number) => void;
-}) {
-    const ref = useRef<HTMLDivElement>(null);
-
-    const handlePointer = useCallback(
-        (clientX: number) => {
-            const rect = ref.current?.getBoundingClientRect();
-            if (!rect) return;
-            onChange(
-                Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)),
-            );
-        },
-        [onChange],
-    );
-
-    const handlePointerDown = useCallback(
-        (e: React.PointerEvent) => {
-            e.preventDefault();
-            (e.target as HTMLElement).setPointerCapture(e.pointerId);
-            handlePointer(e.clientX);
-        },
-        [handlePointer],
-    );
-
-    const handlePointerMove = useCallback(
-        (e: React.PointerEvent) => {
-            if (e.buttons === 0) return;
-            handlePointer(e.clientX);
-        },
-        [handlePointer],
-    );
-
+function HueSlider({ hue, onChange, onCommit }: { hue: number } & HsvHandlers) {
     return (
-        <div
-            ref={ref}
-            className="relative w-full h-8 rounded-lg cursor-pointer touch-none"
-            style={{
-                background:
-                    "linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)",
-            }}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-        >
-            <div
-                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 size-6 rounded-full border-2 border-white shadow-md pointer-events-none"
-                style={{
-                    left: `${hue * 100}%`,
-                    background: RGB.toHex(RGB.fromHSV({ h: hue, s: 1, v: 1 })),
-                }}
-            />
-        </div>
+        <GradientSlider
+            value={Math.round(hue * 360)}
+            max={360}
+            onChange={(h) => onChange({ h: h / 360 })}
+            onCommit={(h) => onCommit({ h: h / 360 })}
+            background="linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)"
+            thumbColor={RGB.toHex(RGB.fromHSV({ h: hue, s: 1, v: 1 }))}
+        />
     );
 }
 
@@ -151,18 +102,17 @@ function HueSaturationWheel({
     saturation,
     value,
     onChange,
+    onCommit,
 }: {
     hue: number;
     saturation: number;
     value: number;
-    onChange: (h: number, s: number) => void;
-}) {
+} & HsvHandlers) {
     const wheelRef = useRef<HTMLDivElement>(null);
-
-    const handlePointer = useCallback(
+    const drag = useDrag(
         (clientX: number, clientY: number) => {
             const rect = wheelRef.current?.getBoundingClientRect();
-            if (!rect) return;
+            if (!rect) return null;
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
             const radius = rect.width / 2;
@@ -173,26 +123,10 @@ function HueSaturationWheel({
             if (angle < 0) angle += 2 * Math.PI;
             const h = angle / (2 * Math.PI);
             const s = Math.min(1, Math.sqrt(dx * dx + dy * dy) / radius);
-            onChange(h, s);
+            return { h, s };
         },
-        [onChange],
-    );
-
-    const handlePointerDown = useCallback(
-        (e: React.PointerEvent) => {
-            e.preventDefault();
-            (e.target as HTMLElement).setPointerCapture(e.pointerId);
-            handlePointer(e.clientX, e.clientY);
-        },
-        [handlePointer],
-    );
-
-    const handlePointerMove = useCallback(
-        (e: React.PointerEvent) => {
-            if (e.buttons === 0) return;
-            handlePointer(e.clientX, e.clientY);
-        },
-        [handlePointer],
+        onChange,
+        onCommit,
     );
 
     const angle = hue * 2 * Math.PI;
@@ -208,8 +142,7 @@ function HueSaturationWheel({
                 background:
                     "radial-gradient(circle closest-side, white, rgb(255 255 255 / 0)), conic-gradient(from 0deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
             }}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
+            {...drag}
         >
             <div
                 className="absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md pointer-events-none"
@@ -230,65 +163,108 @@ function ValueSlider({
     saturation,
     value,
     onChange,
+    onCommit,
 }: {
     hue: number;
     saturation: number;
     value: number;
-    onChange: (v: number) => void;
-}) {
-    const ref = useRef<HTMLDivElement>(null);
-
-    const handlePointer = useCallback(
-        (clientX: number) => {
-            const rect = ref.current?.getBoundingClientRect();
-            if (!rect) return;
-            onChange(
-                Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)),
-            );
-        },
-        [onChange],
-    );
-
-    const handlePointerDown = useCallback(
-        (e: React.PointerEvent) => {
-            e.preventDefault();
-            (e.target as HTMLElement).setPointerCapture(e.pointerId);
-            handlePointer(e.clientX);
-        },
-        [handlePointer],
-    );
-
-    const handlePointerMove = useCallback(
-        (e: React.PointerEvent) => {
-            if (e.buttons === 0) return;
-            handlePointer(e.clientX);
-        },
-        [handlePointer],
-    );
-
+} & HsvHandlers) {
     const fullColor = RGB.toHex(RGB.fromHSV({ h: hue, s: saturation, v: 1 }));
 
+    // 0-255 matches the brightest channel exactly, so no precision is lost
     return (
-        <div
-            ref={ref}
-            className="relative w-full h-8 rounded-lg cursor-pointer touch-none"
-            style={{
-                background: `linear-gradient(to right, #000, ${fullColor})`,
-            }}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-        >
-            <div
-                className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 size-6 rounded-full border-2 border-white shadow-md pointer-events-none"
-                style={{
-                    left: `${value * 100}%`,
-                    background: RGB.toHex(
-                        RGB.fromHSV({ h: hue, s: saturation, v: value }),
-                    ),
-                }}
-            />
-        </div>
+        <GradientSlider
+            value={Math.round(value * 255)}
+            max={255}
+            onChange={(v) => onChange({ v: v / 255 })}
+            onCommit={(v) => onCommit({ v: v / 255 })}
+            background={`linear-gradient(to right, #000, ${fullColor})`}
+            thumbColor={RGB.toHex(
+                RGB.fromHSV({ h: hue, s: saturation, v: value }),
+            )}
+        />
     );
+}
+
+/** A slider drawn as a color gradient, with a thumb showing the current color. */
+function GradientSlider({
+    value,
+    max,
+    onChange,
+    onCommit,
+    background,
+    thumbColor,
+}: {
+    value: number;
+    max: number;
+    onChange: (value: number) => void;
+    onCommit: (value: number) => void;
+    background: string;
+    thumbColor: string;
+}) {
+    return (
+        <Slider.Root
+            value={value}
+            min={0}
+            max={max}
+            onValueChange={(v) => onChange(v)}
+            onValueCommitted={(v) => onCommit(v)}
+        >
+            <Slider.Control className="relative flex h-8 w-full cursor-pointer touch-none items-center select-none">
+                <Slider.Track
+                    className="h-8 w-full rounded-lg"
+                    style={{ background }}
+                />
+                <Slider.Thumb
+                    className="size-6 rounded-full border-2 border-white shadow-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                    style={{ background: thumbColor }}
+                />
+            </Slider.Control>
+        </Slider.Root>
+    );
+}
+
+/**
+ * Pointer handling for a 2D drag area. `locate` maps a pointer position to a
+ * value; the drag reports it through `onChange` while moving and commits the
+ * last one when the pointer is released or the drag is canceled.
+ */
+function useDrag<T>(
+    locate: (clientX: number, clientY: number) => T | null,
+    onChange: (value: T) => void,
+    onCommit: (value: T) => void,
+) {
+    // The last reported value, committed when the drag ends. Kept in a ref
+    // so the commit doesn't depend on a re-render after the last move.
+    // Wrapped so a T of null still counts as a value.
+    const lastRef = useRef<{ value: T } | null>(null);
+
+    const report = (clientX: number, clientY: number) => {
+        const value = locate(clientX, clientY);
+        if (value === null) return;
+        lastRef.current = { value };
+        onChange(value);
+    };
+
+    return {
+        onPointerDown: (e: React.PointerEvent<HTMLElement>) => {
+            // Primary button only; touch and pen contacts also report 0
+            if (e.button !== 0) return;
+            e.preventDefault();
+            e.currentTarget.setPointerCapture(e.pointerId);
+            report(e.clientX, e.clientY);
+        },
+        onPointerMove: (e: React.PointerEvent<HTMLElement>) => {
+            if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+            report(e.clientX, e.clientY);
+        },
+        // Fires after pointerup and pointercancel, but only for drags that
+        // set the capture above
+        onLostPointerCapture: () => {
+            if (lastRef.current) onCommit(lastRef.current.value);
+            lastRef.current = null;
+        },
+    };
 }
 
 function ChannelSlider({
@@ -297,24 +273,26 @@ function ChannelSlider({
     max,
     color,
     onChange,
+    onCommit,
 }: {
     label: string;
     value: number;
     max: number;
     color: string;
     onChange: (v: number) => void;
+    onCommit?: (v: number) => void;
 }) {
     return (
         <div className="flex items-center gap-2">
             <span className="text-xs w-6 text-muted-foreground">{label}</span>
-            <input
-                type="range"
+            <NumberSlider
+                className="flex-1"
                 min={0}
                 max={max}
                 value={value}
-                onChange={(e) => onChange(Number(e.target.value))}
-                className="flex-1 h-8 accent-current touch-none"
-                style={{ color }}
+                onChange={onChange}
+                onCommit={onCommit}
+                color={color}
             />
             <span className="text-xs w-8 text-right tabular-nums text-muted-foreground">
                 {value}
@@ -420,30 +398,38 @@ type SliderMode = "rgb" | "hsv";
 export default function ColorPicker({
     color,
     onChange,
+    onCommit,
     showWhite = false,
     white = 0,
     onWhiteChange,
+    onWhiteCommit,
 }: ColorPickerProps) {
     const [mode, setMode] = useState<PickerMode>("wheel");
     const [sliderMode, setSliderMode] = useState<SliderMode>("rgb");
     const hsv = HSV.fromRGB(color);
 
-    const handleHsvChange = useCallback(
-        (partial: Partial<HSV>) => {
-            const next = { ...hsv, ...partial };
-            // Black (lamp off) round-trips to v=0 with meaningless h/s,
-            // so picking only a hue/saturation would stay black. Default
-            // the components the gesture doesn't set, so picking a color
-            // turns the lamp on.
-            if (hsv.v === 0) {
-                if (partial.v === undefined) next.v = 1;
-                if (partial.s === undefined && partial.h !== undefined)
-                    next.s = 1;
-            }
-            onChange(RGB.fromHSV(next));
-        },
-        [hsv, onChange],
-    );
+    function withHsv(partial: Partial<HSV>): RGB {
+        const next = { ...hsv, ...partial };
+        // Black (lamp off) round-trips to v=0 with meaningless h/s, so
+        // picking only a hue/saturation would stay black. Default the
+        // components the gesture doesn't set, so picking a color turns the
+        // lamp on.
+        if (hsv.v === 0) {
+            if (partial.v === undefined) next.v = 1;
+            if (partial.s === undefined && partial.h !== undefined) next.s = 1;
+        }
+        return RGB.fromHSV(next);
+    }
+
+    /** Handlers for a control whose value `toColor` turns into a color. */
+    function bind<T>(toColor: (value: T) => RGB) {
+        return {
+            onChange: (value: T) => onChange?.(toColor(value)),
+            onCommit: (value: T) => onCommit?.(toColor(value)),
+        };
+    }
+
+    const hsvHandlers = bind(withHsv);
 
     const modeToggle = (
         <ToggleGroup
@@ -484,12 +470,9 @@ export default function ColorPicker({
                         hue={hsv.h}
                         saturation={hsv.s}
                         value={hsv.v}
-                        onChange={(s, v) => handleHsvChange({ s, v })}
+                        {...hsvHandlers}
                     />
-                    <HueSlider
-                        hue={hsv.h}
-                        onChange={(h) => handleHsvChange({ h })}
-                    />
+                    <HueSlider hue={hsv.h} {...hsvHandlers} />
                 </>
             ) : (
                 <>
@@ -497,13 +480,13 @@ export default function ColorPicker({
                         hue={hsv.h}
                         saturation={hsv.s}
                         value={hsv.v}
-                        onChange={(h, s) => handleHsvChange({ h, s })}
+                        {...hsvHandlers}
                     />
                     <ValueSlider
                         hue={hsv.h}
                         saturation={hsv.s}
                         value={hsv.v}
-                        onChange={(v) => handleHsvChange({ v })}
+                        {...hsvHandlers}
                     />
                 </>
             )}
@@ -520,21 +503,21 @@ export default function ColorPicker({
                         value={color.r}
                         max={255}
                         color="#ef4444"
-                        onChange={(r) => onChange({ ...color, r })}
+                        {...bind((r: number) => ({ ...color, r }))}
                     />
                     <ChannelSlider
                         label="G"
                         value={color.g}
                         max={255}
                         color="#22c55e"
-                        onChange={(g) => onChange({ ...color, g })}
+                        {...bind((g: number) => ({ ...color, g }))}
                     />
                     <ChannelSlider
                         label="B"
                         value={color.b}
                         max={255}
                         color="#3b82f6"
-                        onChange={(b) => onChange({ ...color, b })}
+                        {...bind((b: number) => ({ ...color, b }))}
                     />
                 </>
             ) : (
@@ -544,7 +527,7 @@ export default function ColorPicker({
                         value={Math.round(hsv.h * 360)}
                         max={360}
                         color={RGB.toHex(RGB.fromHSV({ h: hsv.h, s: 1, v: 1 }))}
-                        onChange={(h) => handleHsvChange({ h: h / 360 })}
+                        {...bind((h: number) => withHsv({ h: h / 360 }))}
                     />
                     <ChannelSlider
                         label="S"
@@ -553,27 +536,28 @@ export default function ColorPicker({
                         color={RGB.toHex(
                             RGB.fromHSV({ h: hsv.h, s: hsv.s, v: 1 }),
                         )}
-                        onChange={(s) => handleHsvChange({ s: s / 100 })}
+                        {...bind((s: number) => withHsv({ s: s / 100 }))}
                     />
                     <ChannelSlider
                         label="V"
                         value={Math.round(hsv.v * 100)}
                         max={100}
                         color={RGB.toHex(color)}
-                        onChange={(v) => handleHsvChange({ v: v / 100 })}
+                        {...bind((v: number) => withHsv({ v: v / 100 }))}
                     />
                 </>
             )}
-            {showWhite && onWhiteChange && (
+            {showWhite && (
                 <ChannelSlider
                     label="W"
                     value={white}
                     max={255}
                     color="#ffffff"
-                    onChange={onWhiteChange}
+                    onChange={(w) => onWhiteChange?.(w)}
+                    onCommit={onWhiteCommit}
                 />
             )}
-            <Swatches onSelect={onChange} />
+            <Swatches onSelect={(c) => (onCommit ?? onChange)?.(c)} />
         </div>
     );
 

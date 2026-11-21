@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useThrottledCallback } from "use-debounce";
 
+/** Marks that no local value is shown; a private symbol, so it can never be a T. */
+const NONE: unique symbol = Symbol("none");
+
 interface LiveValueOptions<T> {
     /** Latest confirmed value, or undefined if it isn't known yet. */
     remote: T | undefined;
@@ -10,6 +13,8 @@ interface LiveValueOptions<T> {
     interval?: number;
     /** How long a committed value is shown while waiting for `remote` to match. */
     settleTimeout?: number;
+    /** Compare incoming values to the current value to check for equality. Defaults to Object.is */
+    isEqual?: (a: T, b: T) => boolean;
 }
 
 /**
@@ -26,16 +31,21 @@ export function useLiveValue<T>({
     send,
     interval = 50,
     settleTimeout = 1000,
+    isEqual = Object.is,
 }: LiveValueOptions<T>) {
-    // Wrapped so T itself may include null/undefined
-    const [local, setLocal] = useState<{ value: T } | null>(null);
+    const [local, setLocal] = useState<T | typeof NONE>(NONE);
     const [changing, setChanging] = useState(false);
     const settleRef = useRef<ReturnType<typeof setTimeout>>(undefined);
     const throttledSend = useThrottledCallback(send, interval);
 
     // Committed value confirmed by remote -> hand control back
-    if (!changing && local !== null && Object.is(remote, local.value)) {
-        setLocal(null);
+    if (
+        !changing &&
+        local !== NONE &&
+        remote !== undefined &&
+        isEqual(local, remote)
+    ) {
+        setLocal(NONE);
     }
 
     useEffect(() => () => clearTimeout(settleRef.current), []);
@@ -45,7 +55,7 @@ export function useLiveValue<T>({
         (value: T) => {
             clearTimeout(settleRef.current);
             setChanging(true);
-            setLocal({ value });
+            setLocal(() => value);
             throttledSend(value);
         },
         [throttledSend],
@@ -56,14 +66,14 @@ export function useLiveValue<T>({
         (value: T) => {
             clearTimeout(settleRef.current);
             setChanging(false);
-            setLocal({ value });
+            setLocal(() => value);
             throttledSend(value);
             throttledSend.flush();
-            settleRef.current = setTimeout(() => setLocal(null), settleTimeout);
+            settleRef.current = setTimeout(() => setLocal(NONE), settleTimeout);
         },
         [throttledSend, settleTimeout],
     );
 
-    const value = local ? local.value : remote;
+    const value = local !== NONE ? local : remote;
     return useMemo(() => ({ value, change, commit }), [value, change, commit]);
 }

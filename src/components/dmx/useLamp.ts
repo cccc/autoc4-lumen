@@ -3,22 +3,46 @@ import {
     type LampParams,
     type LampType,
 } from "@/lib/dmx/lamp-types";
-import { poweroffLamp, updateLamp } from "@/lib/dmx/lamps";
-import { useMQTTValue } from "@/lib/mqtt";
+import { useLiveValue } from "@/lib/hooks/useLiveValue";
+import { sendData, useMQTTValue } from "@/lib/mqtt";
+import { useMemo } from "react";
 
 export default function useLamp(topic: string, type: LampType) {
     const payload = useMQTTValue(topic);
+    const bytes = payload?.bytes;
     const lampType = LAMP_TYPES[type];
-    const values = lampType.decode(payload?.bytes ?? new Uint8Array(0));
+
+    const {
+        value: liveBytes,
+        change,
+        commit,
+    } = useLiveValue<Uint8Array>({
+        remote: bytes,
+        send: (changedBytes) => {
+            sendData(topic, changedBytes, true);
+        },
+        isEqual: (a, b) => {
+            if (a === b) return true;
+            return a.length === b.length && a.every((v, i) => v === b[i]);
+        },
+    });
+
+    const values = useMemo(
+        () => lampType.decode(liveBytes ?? new Uint8Array(0)),
+        [lampType, liveBytes],
+    );
 
     return {
         values,
         poweroff: () => {
-            poweroffLamp(topic, type);
+            commit(lampType.encode(lampType.poweroff(values)));
         },
         update: (patch: LampParams) => {
-            updateLamp(topic, type, patch);
+            change(lampType.encode(lampType.update(values, patch)));
         },
         supports: lampType.supports,
+        commit: (patch: LampParams) => {
+            commit(lampType.encode(lampType.update(values, patch)));
+        },
     };
 }
